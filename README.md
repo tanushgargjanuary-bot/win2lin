@@ -76,9 +76,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Copy -Resum
 - Use **Dry Run** first. Keep Windows for at least 1–2 weeks after switching.
 - This tool is provided as-is. Review the scripts before running, especially if you add custom copy roots.
 
-## Linux distro suggestion
+## Linux support
 
-For an AMD+NVIDIA laptop moving from Windows: **Linux Mint 22 (Cinnamon)** is a friendly starting point; **Ubuntu 24.04 LTS** is a safe alternative. Test with dual-boot first.
+`scripts/Win2Lin.sh` is **distro-flexible** and best-effort. It detects common package managers and degrades gracefully:
+- `apt` (Debian/Ubuntu/Mint/Pop!_OS)
+- `dnf`/`yum` (Fedora/RHEL family)
+- `pacman` (Arch/Manjaro/EndeavourOS)
+- `zypper` (openSUSE)
+- `apk` (Alpine)
+- `xbps` (Void)
+
+On unknown distros it skips package installs and still helps you locate/restore files from the export. Package names, NVIDIA drivers, and some apps are distro-specific — install those via your distro’s normal tools.
+
+**Beginner-friendly starting points:** Linux Mint 22 (Cinnamon) or Ubuntu 24.04 LTS. Use dual-boot first and keep Windows for 1–2 weeks.
 
 ## Code quality & review
 
