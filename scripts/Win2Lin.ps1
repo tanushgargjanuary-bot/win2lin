@@ -636,6 +636,13 @@ if ($Mode -in @('Copy','Full')) {
       Write-Log "COPY DID NOT START (check errors above - usually not enough disk space)." "ERROR"
     } else {
       Write-Log "Copy finished (see copy_result.json - check Failed count). Manifest: manifest.csv" "OK"
+      try {
+        $verify = Join-Path $PSScriptRoot 'Verify-Win2LinBundle.ps1'
+        if (Test-Path $verify) {
+          & $verify -BundlePath $Destination -Mode Write 2>&1 | % { Write-Log "$_" "INFO" }
+          Write-Log "Wrote checksums.sha256 (verify later with -Mode Verify). Skipped payload hashing for speed." "INFO"
+        }
+      } catch { Write-Log "Checksum step skipped (non-fatal): $($_.Exception.Message)" "WARN" }
       Write-Log "================ NEXT STEPS ================" "OK"
       Write-Log "  1. Find your export: $Destination"
       Write-Log "  2. Copy the WHOLE folder to a USB stick or cloud (rclone)."

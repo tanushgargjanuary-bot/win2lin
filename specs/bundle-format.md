@@ -150,27 +150,27 @@ Rules:
   streams are Windows/NTFS-specific concerns; current behavior is
   implementation-dependent and should be documented by the producer when relevant.
 
-## Checksums (future)
+## Checksums (v1 — implemented)
 
-Checksums improve integrity verification after USB/network transfer and before
-restore.
-
-Planned direction (additive):
+`scripts/Verify-Win2LinBundle.ps1` (PowerShell) and the optional Rust helper
+(`rust/win2lin-verify`, same format) implement SHA-256 bundle verification:
 
 ```text
 <bundle>/
-  checksums.sha256        # or checksums/<algo>.txt
+  checksums.sha256        # UTF-8, no BOM. Lines: "<hex> *<relative-path>"
 ```
 
-Guidelines:
+Format rules:
+- SHA-256 lowercase hex, two spaces? Compatible `sha256sum` coreutils-style: `<hex> *<relative-path-with-slashes>` (also accepts `<hex>  <path>` / `<hex> <path>` on verify).
+- Paths relative to bundle root, `/` separators, sorted, reviewable.
+- Default `Write` covers metadata (`inventory.json`, `manifest.csv`, `copy_result.json`,
+  `log.txt`, `robocopy_*.log`, `migration-report.md`, etc.). `-IncludePayload` adds `C_DRIVE`/`D_DRIVE`
+  payload files (slow for large bundles).
+- `Verify` is read-only: reports `OK`/`BAD`/`MISSING` per line; exit `0` if all OK,
+  `2` if any BAD/MISSING. Never modifies payload.
 
-- Use SHA-256 by default unless there is a strong reason otherwise.
-- Record paths relative to bundle root using a stable separator convention.
-- Include payload files and key metadata files (`inventory.json`, manifests,
-  result summaries) where practical.
-- Allow partial/checkpointed checksum generation for large bundles.
-- Verification tools must report missing/extra/mismatched files clearly and must
-  not modify payload during verification.
+Exit codes & stability:
+- Checksum write/verify: `0`=OK, `2`=BAD/MISSING, `1`=tool/usage error.
 
 ## Versioning
 

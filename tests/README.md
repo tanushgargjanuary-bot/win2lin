@@ -17,6 +17,18 @@ Win2Lin currently uses lightweight, safety-focused validation rather than a larg
 - **PowerShell parser** for `scripts/*.ps1` (basic syntax check; runs in CI).
 - **PSScriptAnalyzer** for `scripts/*.ps1` (best-effort in CI/local when available).
 
+### Automated safety tests (Pester)
+- `tests/Win2Lin.Safety.Tests.ps1` — Pester 3.4-compatible (Windows PowerShell 5.1) and Pester 5+.
+  - Checksum write/verify, tamper/missing detection (`BAD`/`MISSING` → exit 2)
+  - Migration report + recovery kit generation (safety/identity/accessibility sections)
+  - Lite exporter inventory + DryRun no-copy
+  - Self-copy guard logic, safety-doc presence, lite roots exclude browser profiles
+- Run locally (PowerShell 5.1):
+  ```powershell
+  Invoke-Pester .\tests
+  ```
+- CI runs Pester on Windows and `cargo test`/`cargo clippy` for `rust/win2lin-verify` on Ubuntu/Windows.
+
 Example local commands:
 
 ```powershell

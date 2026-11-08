@@ -80,6 +80,15 @@ foreach($r in $roots){
 }
 
 if($DryRun){ Log "DRY RUN done. No files copied. Remove -DryRun to copy for real." "OK" }
-else { Log "Done. OK=$totalOk Failed=$totalFail. Check log.txt and robocopy_*.log" "OK" }
-Log "NEXT: copy '$Destination' to USB -> Linux -> run Win2Lin_script.sh"
+else {
+  Log "Done. OK=$totalOk Failed=$totalFail. Check log.txt and robocopy_*.log" "OK"
+  try {
+    $verify = Join-Path $PSScriptRoot 'Verify-Win2LinBundle.ps1'
+    if (Test-Path $verify) {
+      & $verify -BundlePath $Destination -Mode Write 2>&1 | % { Log "$_" "INFO" }
+      Log "Wrote checksums.sha256 (verify later with -Mode Verify). Skipped payload hashing for speed; add -IncludePayload separately if needed." "INFO"
+    }
+  } catch { Log "Checksum step skipped (non-fatal): $($_.Exception.Message)" "WARN" }
+}
+Log "NEXT: copy '$Destination' to USB -> Linux -> run Win2Lin.sh"
 Log "RE-LOGIN on Linux: 1) Brave Sync 2) Edge Sync 3) Google Password Manager 4) Antigravity 5) OpenCode"

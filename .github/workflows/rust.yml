@@ -1,0 +1,41 @@
+name: Rust (win2lin-verify)
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+  pull_request:
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: cargo test + build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo test --locked
+        working-directory: rust/win2lin-verify
+      - run: cargo clippy -- -D warnings
+        working-directory: rust/win2lin-verify
+      - run: cargo build --release
+        working-directory: rust/win2lin-verify
+        if: github.event_name == 'workflow_dispatch'
