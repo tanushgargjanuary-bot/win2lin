@@ -84,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Copy -Resum
 - **Package/app installs (best-effort, optional):** not literally every distro can be configured automatically. The script detects `/etc/os-release` when available, prints a clear install/limited/restore-only mode summary, and offers optional installs for common package managers:
   - `apt`/`apt-get` (Debian/Ubuntu/Mint/Pop!_OS family)
   - `dnf`/`yum` (Fedora/RHEL family)
-  - `pacman` (Arch/Manjaro/EndeavourOS family)
+  - `pacman` (Arch/Manjaro/EndeavourOS/**Omarchy** family)
   - `zypper` (openSUSE/SLE)
   - `apk` (Alpine/postmarketOS family)
   - `xbps-install` (Void)

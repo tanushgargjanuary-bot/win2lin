@@ -116,6 +116,11 @@ detect_distro() {
     DISTRO_ID_LIKE="${ID_LIKE:-}"
     DISTRO_PRETTY="${PRETTY_NAME:-${NAME:-unknown}}"
   fi
+  # Distro-specific hints
+  if [ "$DISTRO_ID" = "omarchy" ] || [ -f /etc/omarchy-release ] || have omarchy; then
+    IMMUTABLE_HINT="${IMMUTABLE_HINT} Omarchy(Arch-based)"
+    [ "$DISTRO_PRETTY" = "unknown" ] && DISTRO_PRETTY="Omarchy"
+  fi
   # Immutable/atomic/declarative hints
   if [ -f /run/ostree-booted ] || have rpm-ostree; then
     IMMUTABLE_HINT="${IMMUTABLE_HINT} rpm-ostree/OSTree(atomic)"
@@ -140,7 +145,12 @@ detect_pkg_manager() {
 
   if have apt-get || have apt; then PKG="apt"; PKG_NAME="apt (Debian/Ubuntu/Mint/Pop!_OS/etc.)"; INSTALL_MODE="install";
   elif have dnf; then PKG="dnf"; PKG_NAME="dnf (Fedora/RHEL family)"; INSTALL_MODE="install";
-  elif have pacman; then PKG="pacman"; PKG_NAME="pacman (Arch/Manjaro/EndeavourOS/etc.)"; INSTALL_MODE="install";
+  elif have pacman; then
+    if [ "$DISTRO_ID" = "omarchy" ] || [ -f /etc/omarchy-release ] || have omarchy; then
+      PKG="pacman"; PKG_NAME="pacman (Omarchy/Arch-based)"; INSTALL_MODE="install";
+    else
+      PKG="pacman"; PKG_NAME="pacman (Arch/Manjaro/EndeavourOS/Omarchy/etc.)"; INSTALL_MODE="install";
+    fi
   elif have zypper; then PKG="zypper"; PKG_NAME="zypper (openSUSE/SLE)"; INSTALL_MODE="install";
   elif have apk; then PKG="apk"; PKG_NAME="apk (Alpine/postmarketOS/etc.)"; INSTALL_MODE="install";
   elif have xbps-install; then PKG="xbps"; PKG_NAME="xbps (Void)"; INSTALL_MODE="install";
