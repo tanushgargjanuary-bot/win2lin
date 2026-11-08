@@ -15,12 +15,14 @@ EXPORT_DIR="${1:-}"
 PYTHON_BIN=""
 DISTRO_ID=""
 DISTRO_ID_LIKE=""
+DISTRO_VARIANT_ID=""
 DISTRO_PRETTY="unknown"
 PKG=""
 PKG_NAME="unknown (manual install mode)"
 INSTALL_MODE="restore-only"   # install | limited | restore-only
 PRIV_CMD=""
 IMMUTABLE_HINT=""
+NO_AUTO_MUTATE=""             # set for atomic/transactional/declarative/managed systems
 
 # --- helpers ---
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -114,50 +116,147 @@ detect_distro() {
     . "$os_release" 2>/dev/null || true
     DISTRO_ID="${ID:-}"
     DISTRO_ID_LIKE="${ID_LIKE:-}"
+    DISTRO_VARIANT_ID="${VARIANT_ID:-}"
     DISTRO_PRETTY="${PRETTY_NAME:-${NAME:-unknown}}"
   fi
-  # Distro-specific hints
+
+  # Distro-specific hints and friendly names (best-effort; detection uses ID/ID_LIKE/VARIANT_ID/commands)
+  case "$DISTRO_ID" in
+    omarchy) IMMUTABLE_HINT="${IMMUTABLE_HINT} Omarchy(Arch-based)"; [ "$DISTRO_PRETTY" = "unknown" ] && DISTRO_PRETTY="Omarchy" ;;
+    cachyos) IMMUTABLE_HINT="${IMMUTABLE_HINT} CachyOS(Arch-based,mutable)" ;;
+    garuda) IMMUTABLE_HINT="${IMMUTABLE_HINT} Garuda(Arch-based,mutable)" ;;
+    endeavouros) IMMUTABLE_HINT="${IMMUTABLE_HINT} EndeavourOS(Arch-based,mutable)" ;;
+    blendos) IMMUTABLE_HINT="${IMMUTABLE_HINT} blendOS(Arch-based,mutable)" ;;
+    nobara) IMMUTABLE_HINT="${IMMUTABLE_HINT} Nobara(Fedora-based,mutable)" ;;
+    ultramarine) IMMUTABLE_HINT="${IMMUTABLE_HINT} Ultramarine(Fedora-based,mutable)" ;;
+    bazzite|bluefin|aurora) IMMUTABLE_HINT="${IMMUTABLE_HINT} Universal-Blue/Fedora-Atomic(immutable)" ;;
+    microos|opensuse-microos|"opensuse-microos"|"opensuse-tumbleweed") : ;; # refined below
+    aeon|kalpa) IMMUTABLE_HINT="${IMMUTABLE_HINT} openSUSE-${DISTRO_ID}(transactional/immutable)" ;;
+    vanilla) IMMUTABLE_HINT="${IMMUTABLE_HINT} Vanilla-OS(managed/immutable)" ;;
+    guix) IMMUTABLE_HINT="${IMMUTABLE_HINT} Guix(declarative/managed)" ;;
+    steamos) IMMUTABLE_HINT="${IMMUTABLE_HINT} SteamOS(readonly/cautious)" ;;
+    pop) IMMUTABLE_HINT="${IMMUTABLE_HINT} Pop!_OS(apt-based)" ;;
+    zorin) IMMUTABLE_HINT="${IMMUTABLE_HINT} Zorin-OS(apt-based)" ;;
+    elementary) IMMUTABLE_HINT="${IMMUTABLE_HINT} elementary-OS(apt-based)" ;;
+    linuxmint) IMMUTABLE_HINT="${IMMUTABLE_HINT} Linux-Mint(apt-based)" ;;
+    neon) IMMUTABLE_HINT="${IMMUTABLE_HINT} KDE-neon(apt-based)" ;;
+    tuxedo) IMMUTABLE_HINT="${IMMUTABLE_HINT} TUXEDO-OS(apt-based)" ;;
+  esac
   if [ "$DISTRO_ID" = "omarchy" ] || [ -f /etc/omarchy-release ] || have omarchy; then
-    IMMUTABLE_HINT="${IMMUTABLE_HINT} Omarchy(Arch-based)"
+    case " $IMMUTABLE_HINT " in *"Omarchy"*) ;; *) IMMUTABLE_HINT="${IMMUTABLE_HINT} Omarchy(Arch-based)" ;; esac
     [ "$DISTRO_PRETTY" = "unknown" ] && DISTRO_PRETTY="Omarchy"
   fi
-  # Immutable/atomic/declarative hints
+  # openSUSE MicroOS/Aeon/Kalpa variants (transactional)
+  case "$DISTRO_ID:$DISTRO_VARIANT_ID:$DISTRO_PRETTY" in
+    *microos*|*MicroOS*|*:aeon:*|*Aeon*|*:kalpa:*|*Kalpa*)
+      case " $IMMUTABLE_HINT " in *"transactional/immutable"*) ;; *) IMMUTABLE_HINT="${IMMUTABLE_HINT} openSUSE-transactional/immutable" ;; esac
+      ;;
+  esac
+
+  # Immutable/atomic/declarative/managed hints
   if [ -f /run/ostree-booted ] || have rpm-ostree; then
     IMMUTABLE_HINT="${IMMUTABLE_HINT} rpm-ostree/OSTree(atomic)"
+    NO_AUTO_MUTATE=1
   fi
-  if [ "$DISTRO_ID" = "nixos" ] || [ -d /nix/store ]; then
-    IMMUTABLE_HINT="${IMMUTABLE_HINT} Nix/NixOS(declarative)"
+  if [ "$DISTRO_ID" = "nixos" ] || [ -f /etc/NIXOS ]; then
+    IMMUTABLE_HINT="${IMMUTABLE_HINT} NixOS(declarative)"
+    NO_AUTO_MUTATE=1
+  elif [ -d /nix/store ] || have nix-env || have nix; then
+    case " $IMMUTABLE_HINT " in *"Nix"*) ;; *) IMMUTABLE_HINT="${IMMUTABLE_HINT} Nix present (user profile/Home Manager possible)" ;; esac
+  fi
+  if [ "$DISTRO_ID" = "guix" ] || [ -f /etc/guix ]; then
+    case " $IMMUTABLE_HINT " in *"Guix"*) ;; *) IMMUTABLE_HINT="${IMMUTABLE_HINT} Guix System(declarative/managed)" ;; esac
+    NO_AUTO_MUTATE=1
+  elif [ -d /gnu/store ] || have guix; then
+    case " $IMMUTABLE_HINT " in *"Guix"*) ;; *) IMMUTABLE_HINT="${IMMUTABLE_HINT} Guix present (user profile/manual possible)" ;; esac
+  fi
+  if [ "$DISTRO_ID" = "vanilla" ] || have abroot || have apx; then
+    case " $IMMUTABLE_HINT " in *"Vanilla"*) ;; *) IMMUTABLE_HINT="${IMMUTABLE_HINT} Vanilla-OS/abroot-apx(managed)" ;; esac
+    NO_AUTO_MUTATE=1
+  fi
+  if [ "$DISTRO_ID" = "steamos" ] || [ -f /etc/steamos-release ] || have steamos-readonly; then
+    case " $IMMUTABLE_HINT " in *"SteamOS"*) ;; *) IMMUTABLE_HINT="${IMMUTABLE_HINT} SteamOS(readonly/cautious)" ;; esac
+    NO_AUTO_MUTATE=1
+  fi
+  if have transactional-update; then
+    case "$DISTRO_ID:$DISTRO_VARIANT_ID:$DISTRO_ID_LIKE:$DISTRO_PRETTY" in
+      *microos*|*MicroOS*|*aeon*|*Aeon*|*kalpa*|*Kalpa*|*transactional*)
+        IMMUTABLE_HINT="${IMMUTABLE_HINT} transactional-update(present)"
+        NO_AUTO_MUTATE=1
+        ;;
+    esac
   fi
   if [ -r /usr/share/clear/version ] || [ "$DISTRO_ID" = "clear-linux-os" ]; then
     IMMUTABLE_HINT="${IMMUTABLE_HINT} Clear-Linux(swupd/stateless)"
   fi
-  IMMUTABLE_HINT="$(echo "$IMMUTABLE_HINT" | sed 's/^ *//')"
+  IMMUTABLE_HINT="$(echo "$IMMUTABLE_HINT" | sed 's/^ *//; s/  */ /g')"
 }
 
 detect_pkg_manager() {
-  # Prefer explicit/safer choices for immutable systems.
+  # Prefer explicit/safer choices for immutable/atomic/transactional/declarative/managed systems.
+  # Never auto-mutate these: rpm-ostree layering, transactional-update pkg install, NixOS rebuild,
+  # guix system reconfigure, abroot changes, or SteamOS system writes.
   if [ -f /run/ostree-booted ] || have rpm-ostree; then
-    PKG="rpm-ostree"; PKG_NAME="rpm-ostree (Fedora Atomic/Silverblue/Kinoite/etc.)"; INSTALL_MODE="limited"; return
+    PKG="rpm-ostree"; PKG_NAME="rpm-ostree (Fedora Atomic/Universal Blue: Bazzite, Bluefin, Aurora, Silverblue, Kinoite)"; INSTALL_MODE="limited"; NO_AUTO_MUTATE=1; return
   fi
-  if [ "$DISTRO_ID" = "nixos" ] || { have nix && [ -d /nix/store ]; }; then
-    PKG="nix"; PKG_NAME="nix (NixOS/Nix)"; INSTALL_MODE="restore-only"; return
+  if [ "$DISTRO_ID" = "nixos" ] || [ -f /etc/NIXOS ]; then
+    PKG="nix"; PKG_NAME="nix (NixOS, declarative)"; INSTALL_MODE="restore-only"; NO_AUTO_MUTATE=1; return
+  fi
+  if [ "$DISTRO_ID" = "guix" ] || [ -f /etc/guix ]; then
+    PKG="guix"; PKG_NAME="guix (Guix System, declarative/managed)"; INSTALL_MODE="restore-only"; NO_AUTO_MUTATE=1; return
+  fi
+  if [ "$DISTRO_ID" = "vanilla" ] || have abroot || have apx; then
+    PKG="vanilla"; PKG_NAME="Vanilla OS / abroot+apx (managed)"; INSTALL_MODE="restore-only"; NO_AUTO_MUTATE=1; return
+  fi
+  # openSUSE MicroOS/Aeon/Kalpa or transactional systems: do NOT auto-run transactional-update.
+  if have transactional-update; then
+    case "$DISTRO_ID:$DISTRO_VARIANT_ID:$DISTRO_ID_LIKE:$DISTRO_PRETTY" in
+      *microos*|*MicroOS*|*aeon*|*Aeon*|*kalpa*|*Kalpa*|*transactional*)
+        PKG="transactional"; PKG_NAME="transactional-update (openSUSE MicroOS/Aeon/Kalpa, immutable/transactional)"; INSTALL_MODE="restore-only"; NO_AUTO_MUTATE=1; return
+        ;;
+    esac
+  fi
+  # SteamOS: often Arch-based but system partitions/readonly concerns. Be cautious.
+  if [ "$DISTRO_ID" = "steamos" ] || [ -f /etc/steamos-release ] || have steamos-readonly; then
+    PKG="steamos"; PKG_NAME="SteamOS (cautious; system may be readonly/managed)"; INSTALL_MODE="restore-only"; NO_AUTO_MUTATE=1; return
   fi
 
-  if have apt-get || have apt; then PKG="apt"; PKG_NAME="apt (Debian/Ubuntu/Mint/Pop!_OS/etc.)"; INSTALL_MODE="install";
-  elif have dnf; then PKG="dnf"; PKG_NAME="dnf (Fedora/RHEL family)"; INSTALL_MODE="install";
+  if have apt-get || have apt; then
+    PKG="apt"; INSTALL_MODE="install"
+    case "$DISTRO_ID" in
+      pop) PKG_NAME="apt (Pop!_OS, Ubuntu-based)" ;;
+      zorin) PKG_NAME="apt (Zorin OS, Ubuntu-based)" ;;
+      elementary) PKG_NAME="apt (elementary OS, Ubuntu-based)" ;;
+      linuxmint) PKG_NAME="apt (Linux Mint, Ubuntu-based)" ;;
+      neon) PKG_NAME="apt (KDE neon, Ubuntu-based)" ;;
+      tuxedo) PKG_NAME="apt (TUXEDO OS, Ubuntu-based)" ;;
+      *) PKG_NAME="apt (Debian/Ubuntu/Mint/Pop!_OS/Zorin/elementary/KDE neon/TUXEDO family)" ;;
+    esac
+  elif have dnf; then
+    PKG="dnf"; INSTALL_MODE="install"
+    case "$DISTRO_ID" in
+      nobara) PKG_NAME="dnf (Nobara, Fedora-based, mutable)" ;;
+      ultramarine) PKG_NAME="dnf (Ultramarine, Fedora-based, mutable)" ;;
+      *) PKG_NAME="dnf (Fedora/RHEL family; Nobara/Ultramarine if mutable)" ;;
+    esac
   elif have pacman; then
-    if [ "$DISTRO_ID" = "omarchy" ] || [ -f /etc/omarchy-release ] || have omarchy; then
-      PKG="pacman"; PKG_NAME="pacman (Omarchy/Arch-based)"; INSTALL_MODE="install";
-    else
-      PKG="pacman"; PKG_NAME="pacman (Arch/Manjaro/EndeavourOS/Omarchy/etc.)"; INSTALL_MODE="install";
-    fi
-  elif have zypper; then PKG="zypper"; PKG_NAME="zypper (openSUSE/SLE)"; INSTALL_MODE="install";
+    PKG="pacman"; INSTALL_MODE="install"
+    case "$DISTRO_ID" in
+      omarchy) PKG_NAME="pacman (Omarchy, Arch-based)" ;;
+      cachyos) PKG_NAME="pacman (CachyOS, Arch-based, mutable)" ;;
+      garuda) PKG_NAME="pacman (Garuda, Arch-based, mutable)" ;;
+      endeavouros) PKG_NAME="pacman (EndeavourOS, Arch-based, mutable)" ;;
+      blendos) PKG_NAME="pacman (blendOS, Arch-based, mutable)" ;;
+      manjaro) PKG_NAME="pacman (Manjaro, Arch-based)" ;;
+      *) PKG_NAME="pacman (Arch/Manjaro/EndeavourOS/CachyOS/Garuda/blendOS/Omarchy family)" ;;
+    esac
+  elif have zypper; then PKG="zypper"; PKG_NAME="zypper (openSUSE Leap/Tumbleweed/SLE, mutable)"; INSTALL_MODE="install";
   elif have apk; then PKG="apk"; PKG_NAME="apk (Alpine/postmarketOS/etc.)"; INSTALL_MODE="install";
   elif have xbps-install; then PKG="xbps"; PKG_NAME="xbps (Void)"; INSTALL_MODE="install";
   elif have swupd; then PKG="swupd"; PKG_NAME="swupd (Clear Linux)"; INSTALL_MODE="limited";
   elif have eopkg; then PKG="eopkg"; PKG_NAME="eopkg (Solus)"; INSTALL_MODE="install";
   elif have emerge; then PKG="emerge"; PKG_NAME="emerge (Gentoo; best-effort/cautious)"; INSTALL_MODE="limited";
-  elif have nix-env || have nix; then PKG="nix"; PKG_NAME="nix profile/env (best-effort/manual guidance)"; INSTALL_MODE="limited";
+  elif have nix-env || have nix; then PKG="nix"; PKG_NAME="nix profile/env (best-effort/manual guidance)"; INSTALL_MODE="limited"; NO_AUTO_MUTATE=1;
   elif have yum; then PKG="yum"; PKG_NAME="yum (older RHEL/CentOS)"; INSTALL_MODE="install";
   else PKG=""; PKG_NAME="unknown (manual install mode)"; INSTALL_MODE="restore-only";
   fi
@@ -167,17 +266,17 @@ print_mode_summary() {
   echo ""
   echo "=== Win2Lin environment summary ==="
   echo "Distro: ${DISTRO_PRETTY}"
-  [ -n "$DISTRO_ID" ] && echo "ID: $DISTRO_ID${DISTRO_ID_LIKE:+ (like: $DISTRO_ID_LIKE)}"
+  [ -n "$DISTRO_ID" ] && echo "ID: $DISTRO_ID${DISTRO_ID_LIKE:+ (like: $DISTRO_ID_LIKE)}${DISTRO_VARIANT_ID:+ variant=$DISTRO_VARIANT_ID}"
   [ -n "$IMMUTABLE_HINT" ] && echo "Hints: $IMMUTABLE_HINT"
   echo "Package manager: $PKG_NAME"
   echo "Privilege: ${PRIV_CMD:-none (root/sudo/doas/pkexec not found)}"
   case "$INSTALL_MODE" in
-    install) echo "Mode: supported for best-effort installs (optional) + core restore." ;;
-    limited) echo "Mode: limited installs (best-effort/manual guidance) + core restore. Review suggestions carefully." ;;
-    *) echo "Mode: restore-only/manual installs + core restore. Core file restore should still work if basic tools exist." ;;
+    install) echo "Mode: install (mutable, best-effort, confirmed before installs) + core restore." ;;
+    limited) echo "Mode: limited (best-effort/manual guidance) + core restore. Review suggestions carefully." ;;
+    *) echo "Mode: restore-only (no automatic system mutation) + core restore. Core file restore should still work if basic tools exist." ;;
   esac
   echo "Core restore dependencies: bash; helpful tools include find, cp/mkdir/chmod, python3/python (optional summary)."
-  echo "Note: not literally every distro can be installed/configured automatically; immutable/declarative systems need manual or profile-based steps."
+  echo "Safety: never auto-mutates immutable/atomic/transactional/declarative/managed systems (rpm-ostree layering, transactional-update pkg install, NixOS rebuild, guix system reconfigure, abroot changes)."
   echo "==================================="
 }
 
@@ -220,12 +319,34 @@ ask_yn "Continue?" || { echo "Stopped. No changes made."; exit 0; }
 print_install_guidance() {
   case "$PKG" in
     rpm-ostree)
-      echo "[tools] rpm-ostree/atomic system detected: NOT layering packages automatically."
-      echo "        Prefer: flatpak, toolbox, or distrobox for apps/tools; use rpm-ostree only with care."
+      echo "[tools] rpm-ostree/atomic system detected (e.g. Bazzite/Bluefin/Aurora/Silverblue/Kinoite): NOT layering packages automatically."
+      echo "        Prefer: Flatpak for apps, distrobox/toolbox for CLI/dev tools, Homebrew-on-Linux if you use it."
+      echo "        Manual (explicit, use care): rpm-ostree install <pkg> then reboot. Core file restore works without package changes."
+      ;;
+    transactional)
+      echo "[tools] openSUSE MicroOS/Aeon/Kalpa (transactional/immutable) detected: NOT auto-running transactional-update to install packages."
+      echo "        Prefer: Flatpak for apps, distrobox for CLI/dev tools."
+      echo "        Manual transactional workflow (review carefully): sudo transactional-update pkg install <packages> then reboot."
+      echo "        Core file restore works without package changes."
+      ;;
+    vanilla)
+      echo "[tools] Vanilla OS (managed/abroot+apx) detected: NOT mutating system packages automatically."
+      echo "        Prefer: apx for managed containers/packages, Flatpak for apps, distrobox if available."
+      echo "        Core file restore works without package changes."
+      ;;
+    guix)
+      echo "[tools] Guix System detected (declarative/managed): NOT running guix system reconfigure automatically."
+      echo "        Options: guix install <pkg> (user profile), Guix Home, or edit your system/home config manually."
+      echo "        Core file restore works without package changes."
+      ;;
+    steamos)
+      echo "[tools] SteamOS detected: system partitions may be readonly/managed (SteamOS updates can affect system state)."
+      echo "        Defaulting to restore-only/limited guidance. NOT auto-installing pacman packages."
+      echo "        Prefer: Flatpak for apps, distrobox for CLI/dev tools. If you intentionally manage system packages, do so manually and understand SteamOS readonly/deck implications."
       echo "        Core file restore works without package changes."
       ;;
     nix)
-      echo "[tools] Nix/NixOS detected: system config is declarative; NOT auto-installing system packages."
+      echo "[tools] Nix/NixOS detected: system config is declarative; NOT auto-installing system packages or rebuilding."
       echo "        Options: nix profile install (user), Home Manager, or edit your Nix config manually."
       echo "        Example user tools (verify names): nix profile install nixpkgs#git nixpkgs#curl nixpkgs#python3 nixpkgs#nodejs nixpkgs#jq nixpkgs#rsync"
       ;;
@@ -240,6 +361,7 @@ print_install_guidance() {
     *)
       echo "[tools] No automatic package manager detected or installs limited. Install manually with your distro's tools."
       echo "        Common tools: git curl wget python3 nodejs npm flatpak unzip jq rsync rclone zstd"
+      echo "        Also consider: distrobox/toolbox/Flatpak on immutable or container-oriented setups."
       ;;
   esac
 }
@@ -265,6 +387,7 @@ install_base() {
       run_root dnf install -y git curl wget python3 nodejs flatpak unzip jq rsync || true
       ;;
     pacman)
+      echo "Note: pacman installs are confirmed by you and intended for mutable Arch-family systems (e.g. CachyOS/Garuda/EndeavourOS/blendOS/Manjaro)."
       run_root pacman -Sy --noconfirm git curl wget python python-pip nodejs npm flatpak unzip jq rsync rclone zstd || \
       run_root pacman -Sy --noconfirm git curl wget python nodejs npm flatpak unzip jq rsync || true
       ;;
@@ -299,7 +422,7 @@ install_base() {
       echo "Gentoo/emerge: automatic package installation is not performed by default (system-specific)."
       print_install_guidance
       ;;
-    rpm-ostree|nix|"")
+    rpm-ostree|transactional|vanilla|guix|steamos|nix|"")
       print_install_guidance
       ;;
     *)
@@ -308,16 +431,20 @@ install_base() {
   esac
 }
 
-if [ "$INSTALL_MODE" = "restore-only" ] || [ "$PKG" = "rpm-ostree" ] || [ "$PKG" = "nix" ]; then
+if [ "$INSTALL_MODE" = "restore-only" ] || [ -n "$NO_AUTO_MUTATE" ]; then
   echo ""
-  echo "Automatic base package install is disabled/limited for this environment."
+  echo "Automatic base package install is disabled for this environment (restore-only/safety)."
   print_install_guidance
 elif [ -z "$PRIV_CMD" ]; then
   echo ""
   echo "No root/sudo/doas/pkexec available; skipping automatic package installs."
   print_install_guidance
 else
-  if ask_yn "Install common base tools now (best-effort, optional)?"; then install_base; else echo "Skipped base tool install."; fi
+  if ask_yn "Install common base tools now (best-effort, optional, mutable systems only)?"; then
+    install_base
+  else
+    echo "Skipped base tool install."
+  fi
 fi
 
 # --- Flatpak apps (optional) ---
@@ -336,9 +463,11 @@ if have flatpak; then
   fi
 else
   echo "Flatpak not found; skipping Brave/VS Code Flatpak install."
-  if [ "$PKG" = "rpm-ostree" ]; then
-    echo "Atomic system note: Flatpak is usually the preferred way to install desktop apps."
-  fi
+  case "$PKG" in
+    rpm-ostree|transactional|vanilla|steamos)
+      echo "Managed/immutable system note: Flatpak and/or distrobox/apx are usually preferred for apps and tools."
+      ;;
+  esac
 fi
 
 # --- Bun (optional) ---
@@ -483,9 +612,9 @@ fi
 echo ""
 echo "Done (best-effort)."
 echo "Distro: $DISTRO_PRETTY"
-echo "Mode: $INSTALL_MODE (package installs are optional/best-effort; core restore is the priority)."
+echo "Mode: $INSTALL_MODE${NO_AUTO_MUTATE:+ (no automatic system mutation)} (core restore is the priority)."
 echo "C_DRIVE = your old C: at: $EXPORT_DIR/C_DRIVE"
 echo "D_DRIVE = your old D: at: $EXPORT_DIR/D_DRIVE"
 echo "NVIDIA drivers, gaming launchers, and some apps are distro/environment-specific - install via your distro's normal tools."
-echo "Immutable/declarative systems (rpm-ostree, NixOS, etc.) may require flatpak/toolbox/distrobox/nix profile/home-manager/manual config."
+echo "Immutable/atomic/transactional/declarative/managed systems may require Flatpak, distrobox/toolbox, apx, nix profile/Home Manager, guix install/Home config, or careful manual steps."
 echo "Keep Windows for 1-2 weeks while testing Linux."

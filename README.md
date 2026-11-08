@@ -78,23 +78,35 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Copy -Resum
 
 ## Linux support
 
-`scripts/Win2Lin.sh` aims for **maximum practical portability** with honest graceful degradation:
+`scripts/Win2Lin.sh` aims for **maximum practical portability** with honest, safe graceful degradation. It uses **best-effort detection/guidance** from `/etc/os-release` (`ID`, `ID_LIKE`, `VARIANT_ID`, `PRETTY_NAME`) and command/presence hints — **not every new or trending distro has been tested**, but core restore is designed to remain portable.
 
 - **Core restore (universal goal):** locating the export and restoring safe files (`.gitconfig`, selected dot-config dirs with no-clobber, fonts, and safe SSH files only: `config`, `known_hosts`, `authorized_keys`, `*.pub` — **never** private keys/passwords/tokens/cookies) should work on almost any Linux environment that has `bash` plus basic core utilities. If tools like `find`, `cp`, or `python` are missing, it degrades and continues where possible.
-- **Package/app installs (best-effort, optional):** not literally every distro can be configured automatically. The script detects `/etc/os-release` when available, prints a clear install/limited/restore-only mode summary, and offers optional installs for common package managers:
-  - `apt`/`apt-get` (Debian/Ubuntu/Mint/Pop!_OS family)
-  - `dnf`/`yum` (Fedora/RHEL family)
-  - `pacman` (Arch/Manjaro/EndeavourOS/**Omarchy** family)
-  - `zypper` (openSUSE/SLE)
-  - `apk` (Alpine/postmarketOS family)
-  - `xbps-install` (Void)
-  - `eopkg` (Solus)
-  - `swupd` (Clear Linux; bundle names differ, conservative/best-effort)
-  - `emerge` (Gentoo; **cautious/manual guidance** only — package names/USE flags are system-specific)
-  - `nix`/`nix-env`/`nix profile` (NixOS/Nix; **declarative** — no automatic system config changes; suggests user profile/Home Manager/manual config)
-  - `rpm-ostree` (Fedora Atomic/Silverblue/Kinoite; **does not layer packages automatically** — suggests Flatpak/toolbox/distrobox)
+- **Modes:** the script prints a clear mode summary — **`install`** (mutable systems, asks for confirmation before best-effort installs), **`limited`** (best-effort/manual guidance), or **`restore-only`** (no automatic system mutation) — plus core restore.
+- **Safety rule:** Win2Lin **never auto-mutates immutable/atomic/transactional/declarative/managed systems** (no `rpm-ostree` layering, no automatic `transactional-update` package installs, no NixOS system rebuild, no `guix system reconfigure`, no `abroot`/managed system changes). It defaults to skipping system package mutation and giving manual guidance.
+
+### Mutable families (best-effort install mode, confirmed)
+
+- `apt`/`apt-get`: Debian, Ubuntu, Linux Mint, **Pop!_OS**, **Zorin OS**, **elementary OS**, **KDE neon**, **TUXEDO OS**, and related derivatives.
+- `dnf`/`yum`: Fedora/RHEL family, including mutable Fedora derivatives such as **Nobara** and **Ultramarine** when `dnf` is available.
+- `pacman`: Arch family, including **CachyOS**, **Garuda**, **EndeavourOS**, **blendOS**, Manjaro, and **Omarchy** (mutable Arch-based systems; installs are always confirmed).
+- `zypper`: mutable openSUSE Leap/Tumbleweed/SLE systems.
+- `apk`: Alpine/postmarketOS family.
+- `xbps-install`: Void.
+- `eopkg`: Solus.
+
+### Atomic / immutable / transactional / declarative / managed (restore-only or limited guidance; no auto system mutation)
+
+- **Universal Blue / Fedora Atomic (rpm-ostree/OSTree):** **Bazzite**, **Bluefin**, **Aurora**, Silverblue, Kinoite, etc. No automatic `rpm-ostree install`/layering. Suggest **Flatpak**, **distrobox/toolbox**, Homebrew-on-Linux if relevant, or careful manual `rpm-ostree` workflow.
+- **openSUSE MicroOS / Aeon / Kalpa (transactional):** detected via `ID`/`VARIANT_ID`/`ID_LIKE`/`PRETTY_NAME` and/or `transactional-update`. **No automatic `transactional-update` package install.** Suggest Flatpak, distrobox, or a manual transactional workflow.
+- **Vanilla OS (v2+ / managed):** may use `abroot`/`apx`; treated as managed/immutable. **No automatic system package mutation.** Suggest `apx`, Flatpak, distrobox, or manual steps.
+- **Guix System / Guix:** detected via `guix`, `ID=guix`, or `/gnu/store`. **No automatic system reconfiguration.** Suggest `guix install` (user profile), Guix Home, or manual config; core restore still works.
+- **SteamOS:** detected via SteamOS hints (for example `/etc/os-release`, `/etc/steamos-release`, `steamos-readonly`). Treated cautiously because system partitions/readonly/managed state can be involved; defaults to **restore-only/limited guidance**. Suggest Flatpak/distrobox; manage system packages manually only if you understand SteamOS implications.
+- **NixOS / Nix variants:** declarative; **no automatic system rebuild/config changes**. Suggest `nix profile install`, Home Manager, or manual Nix config.
+- **Clear Linux (`swupd`):** bundle names differ; conservative/best-effort guidance only.
+- **Gentoo (`emerge`):** cautious/manual guidance only (package names/USE flags are system-specific).
+
 - **Privileges:** supports root, `sudo`, `doas`, or `pkexec` when available; if none are available, it skips privileged installs with a clear message.
-- **Safety:** asks before installs, makes no destructive changes, avoids clobbering existing user configs by default, and never restores private keys.
+- **Safety details:** asks before installs, makes no destructive changes, avoids clobbering existing user configs by default, and never restores private keys.
 
 On unknown, immutable, minimal, or unusual distros, use **restore-only/manual mode**: the export’s `C_DRIVE`/`D_DRIVE` data is still there, and you can install apps/configs with your distro’s normal tools.
 
