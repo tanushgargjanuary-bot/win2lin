@@ -1,0 +1,21 @@
+# Win2Lin exports / test artifacts (never commit user data)
+Win2Lin_export/
+Win2Lin_export*/
+*_export*/
+**/inventory.json
+**/manifest.csv
+**/copy_result.json
+**/copy_log.txt
+**/log.txt
+**/robocopy_*.log
+*.part.*
+C_DRIVE/
+D_DRIVE/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/

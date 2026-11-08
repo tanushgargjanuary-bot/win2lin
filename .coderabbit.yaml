@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit config for Win2Lin
+# Enable reviews by installing the CodeRabbit GitHub App: https://github.com/apps/coderabbitai
+
+language: en-US
+tone_instructions: "Be concise and practical. Prioritize security, data safety, and cross-platform correctness."
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  path_filters:
+    - "!**/Win2Lin_export*/**"
+    - "!**/*.log"
+  path_instructions:
+    - path: "scripts/*.ps1"
+      instructions: |
+        Review for: data loss risks, credential/secret handling (never copy browser passwords/cookies/DPAPI material),
+        path traversal/self-copy bugs, OneDrive path handling, PowerShell 5.1 + 7 compatibility, quoting/space-in-path issues,
+        and safe defaults (dry-run, no destructive mirroring). Prefer robust built-in tools (robocopy) over custom copy engines when appropriate.
+    - path: "scripts/*.sh"
+      instructions: |
+        Review for: safe defaults, quoting, portability (Ubuntu/Mint/Fedora), idempotency, and avoiding destructive operations
+        without confirmation. Never copy or restore private keys/tokens.
+    - path: "Win2Lin.bat"
+      instructions: |
+        Review for: correct quoting with spaces, safe defaults, and clear user prompts.
+
+chat:
+  auto_reply: true
