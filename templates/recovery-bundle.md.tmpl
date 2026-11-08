@@ -1,0 +1,31 @@
+# Win2Lin Recovery Bundle Checklist (template)
+
+> Privacy: This bundle must **never** include passwords, cookies/session tokens, DPAPI/keychain credentials, private keys, or MFA secrets. Use your password manager/browser/account recovery for those.
+
+## Bundle info
+- Created: {{created_at}}
+- Host: {{host}} (non-sensitive)
+- Profile: {{profile}}
+- Encryption: {{encryption}} (if used, key/passphrase loss = unrecoverable)
+
+## Integrity
+- [ ] Manifest present
+- [ ] Checksums verified (SHA-256 where available)
+- [ ] Restore drill completed (sample files)
+
+## Essential data
+- [ ] Critical documents/projects included
+- [ ] Exclusions reviewed
+
+## Rebuild plan
+- [ ] App inventory/reinstall list
+- [ ] Dev environment intent (reproducible, no binaries assumed)
+- [ ] Identity re-bootstrap checklist (re-auth only)
+
+## Restore order
+1. Verify integrity
+2. Restore critical data
+3. Install OS/apps/drivers (manual/approved)
+4. Restore safe configs (no-clobber)
+5. Re-authenticate accounts
+6. Validate accessibility and core workflows

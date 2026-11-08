@@ -1,0 +1,23 @@
+# Example Win2Lin migration recipe (safe, manual-first). Do not add secrets or auto-mutation.
+schema_version: 1
+id: example.safe-manual
+version: 0.1.0
+status: example
+applies_to:
+  source: windows
+  target: linux
+  notes: "Template only - verify for your distro/app versions."
+intent: "Example: migrate a non-secret app workflow manually"
+provenance:
+  author: win2lin-contributors
+  confidence: low
+  reviewed: false
+  tests: []
+never_do:
+  - "Never export passwords, cookies, session tokens, DPAPI/keychain data, or private keys."
+  - "Never auto-mutate immutable/atomic/transactional/declarative/managed systems."
+steps:
+  - type: manual
+    risk: low
+    action: "Use official sync/export feature if it excludes secrets; otherwise recreate settings."
+    verify: "Confirm app works and no secrets were copied."
