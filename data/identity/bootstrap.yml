@@ -1,0 +1,23 @@
+schema_version: 1
+purpose: "Identity/app-state bootstrap checklist. Separate portable data from secret/auth state. No secrets."
+categories:
+  - id: browser-sync
+    label: "Browser sync"
+    strategy: provider_sync
+    actions: ["Enable Brave/Edge/Firefox sync", "Verify bookmarks/extensions/settings as supported", "Export bookmarks HTML backup if desired"]
+  - id: password-manager
+    label: "Password manager"
+    strategy: reauth
+    actions: ["Sign in to password manager", "Verify vault access", "Never copy passwords/cookies via migration bundle"]
+  - id: mfa
+    label: "MFA / authenticators"
+    strategy: provider_recovery_or_manual
+    actions: ["Use provider-approved MFA transfer/recovery", "Never export/store secret seeds in Win2Lin artifacts"]
+  - id: dev-identity
+    label: "Developer identity"
+    strategy: reauth_and_safe_config
+    actions: ["Re-auth GitHub/GitLab/cloud CLIs", "Restore public SSH config/known_hosts/*.pub only if desired; regenerate private keys when appropriate"]
+  - id: apps
+    label: "Key apps"
+    strategy: reauth
+    actions: ["Sign in to Antigravity, OpenCode, messaging, office/creative apps as needed"]

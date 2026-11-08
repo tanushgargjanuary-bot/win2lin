@@ -1,0 +1,21 @@
+schema_version: 1
+purpose: "Safe, migration-relevant accessibility checklist (no medical/personal inference; no secrets)."
+checklist:
+  - id: screen-reader
+    label: "Screen reader"
+    verify: ["Install/enable (Orca or distro equivalent)", "Test browser, terminal, editor"]
+  - id: magnification-contrast
+    label: "Magnification & contrast"
+    verify: ["Zoom/magnifier", "High contrast/theme", "Cursor size/visibility"]
+  - id: input
+    label: "Keyboard & pointer"
+    verify: ["Sticky/slow/bounce keys", "Mouse/touchpad settings", "On-screen keyboard if needed"]
+  - id: display
+    label: "Display & media"
+    verify: ["Scaling/font size", "Night light/color filters", "Captions/audio descriptions as needed"]
+  - id: language-ime
+    label: "Language & input methods"
+    verify: ["Keyboard layouts", "IME for required languages"]
+notes:
+  - "Mappings are best-effort; verify against your target distro/desktop environment."
+  - "Do not store credentials or sensitive personal attributes in migration artifacts."
