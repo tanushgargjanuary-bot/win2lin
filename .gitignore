@@ -12,6 +12,9 @@ Win2Lin_export*/
 C_DRIVE/
 D_DRIVE/
 
+# Rust build artifacts (never commit; build locally/CI)
+rust/**/target/
+
 # OS/editor
 .DS_Store
 Thumbs.db
