@@ -320,18 +320,19 @@ print_install_guidance() {
   case "$PKG" in
     rpm-ostree)
       echo "[tools] rpm-ostree/atomic system detected (e.g. Bazzite/Bluefin/Aurora/Silverblue/Kinoite): NOT layering packages automatically."
-      echo "        Prefer: Flatpak for apps, distrobox/toolbox for CLI/dev tools, Homebrew-on-Linux if you use it."
+      echo "        Prefer (safe, no system mutation): Flatpak --user for apps; distrobox (Ubuntu/Fedora) or toolbox for CLI/dev tools."
+      echo "          e.g. distrobox create -n win2lin-ubuntu -i ubuntu:24.04 --yes && distrobox enter win2lin-ubuntu -- sudo apt install -y git curl python3 nodejs"
       echo "        Manual (explicit, use care): rpm-ostree install <pkg> then reboot. Core file restore works without package changes."
       ;;
     transactional)
       echo "[tools] openSUSE MicroOS/Aeon/Kalpa (transactional/immutable) detected: NOT auto-running transactional-update to install packages."
-      echo "        Prefer: Flatpak for apps, distrobox for CLI/dev tools."
+      echo "        Prefer (safe, no system mutation): Flatpak --user for apps; distrobox/toolbox for CLI/dev tools (same recipes as rpm-ostree)."
       echo "        Manual transactional workflow (review carefully): sudo transactional-update pkg install <packages> then reboot."
       echo "        Core file restore works without package changes."
       ;;
     vanilla)
       echo "[tools] Vanilla OS (managed/abroot+apx) detected: NOT mutating system packages automatically."
-      echo "        Prefer: apx for managed containers/packages, Flatpak for apps, distrobox if available."
+      echo "        Prefer (safe, no system mutation): apx (e.g. apx create -n win2lin-debian -s Debian; apx -n win2lin-debian install git nodejs), Flatpak --user for apps, distrobox if available."
       echo "        Core file restore works without package changes."
       ;;
     guix)
@@ -468,6 +469,23 @@ else
       echo "Managed/immutable system note: Flatpak and/or distrobox/apx are usually preferred for apps and tools."
       ;;
   esac
+fi
+
+# --- User-level tools (safe on ALL distros, no sudo) ---
+if ask_yn "Install user tools via pipx (no sudo, isolated in ~/.local)?"; then
+  if have python3; then
+    if ! have pipx; then
+      python3 -m pip install --user pipx 2>/dev/null || echo "pipx install failed; skipping user tools."
+    fi
+    if have pipx || python3 -m pipx --version >/dev/null 2>&1; then
+      echo "[user-tools] pipx found. Install tools with: pipx install <tool>  (undo: pipx uninstall <tool>)"
+      echo "           Example: pipx install black ; pipx install ruff"
+    fi
+  else
+    echo "python3 not found; skipping pipx user tools."
+  fi
+else
+  echo "Skipped user tools."
 fi
 
 # --- Bun (optional) ---

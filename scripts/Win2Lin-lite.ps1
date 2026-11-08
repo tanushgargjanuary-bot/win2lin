@@ -11,7 +11,8 @@ param(
   [ValidateSet('Inventory','Copy')][string]$Mode = 'Inventory',
   [string]$Destination = '',
   [switch]$DryRun,
-  [switch]$SkipD
+  [switch]$SkipD,
+  [ValidateSet('Minimal','Office','Dev')][string]$Profile = 'Office'
 )
 $ErrorActionPreference = 'Continue'
 $script:LogPath = $null
@@ -38,12 +39,19 @@ Log "Inventory -> inventory.json"
 
 if ($Mode -ne 'Copy') { Log "Done (inventory only). Run with -Mode Copy to copy files."; return }
 
-# --- copy roots ---
-$roots = @()
-foreach($f in @('MyDocuments','Desktop','MyPictures','MyMusic','MyVideos')){ try{ $p=[Environment]::GetFolderPath($f); if($p -and (Test-Path $p)){ $roots += [pscustomobject]@{Path=$p;Drive='C'} } }catch{} }
-try{ $dl=Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads'; if(Test-Path $dl){ $roots += [pscustomobject]@{Path=$dl;Drive='C'} } }catch{}
-$roots = $roots | Sort-Object Path -Unique
-if(-not $SkipD -and (Test-Path 'D:\')){ $roots += [pscustomobject]@{Path='D:\';Drive='D'} }
+# --- copy roots (profile-aware; Office/Dev = current default) ---
+if ($Profile -eq 'Minimal') {
+  $roots = @()
+  foreach($f in @('MyDocuments','Desktop')){ try{ $p=[Environment]::GetFolderPath($f); if($p -and (Test-Path $p)){ $roots += [pscustomobject]@{Path=$p;Drive='C'} } }catch{} }
+  Log "Profile=Minimal (Documents+Desktop only)" "INFO"
+} else {
+  $roots = @()
+  foreach($f in @('MyDocuments','Desktop','MyPictures','MyMusic','MyVideos')){ try{ $p=[Environment]::GetFolderPath($f); if($p -and (Test-Path $p)){ $roots += [pscustomobject]@{Path=$p;Drive='C'} } }catch{} }
+  try{ $dl=Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads'; if(Test-Path $dl){ $roots += [pscustomobject]@{Path=$dl;Drive='C'} } }catch{}
+  $roots = $roots | Sort-Object Path -Unique
+  if(-not $SkipD -and (Test-Path 'D:\')){ $roots += [pscustomobject]@{Path='D:\';Drive='D'} }
+  Log "Profile=$Profile" "INFO"
+}
 
 # self-copy guard
 $destFull = [IO.Path]::GetFullPath($Destination).TrimEnd('\','/')

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "office",
+  "name": "Office (recommended)",
+  "risk_level": "standard",
+  "selection": {
+    "include_groups": ["documents", "desktop", "downloads", "pictures", "music", "videos"],
+    "optional_groups": ["d_drive"],
+    "exclude_groups": []
+  },
+  "checksums": { "mode": "standard", "algorithm": "sha256" },
+  "resume": { "enabled": true },
+  "encryption": { "default_enabled": false },
+  "policy": { "allow_secret_exclusions_override": false, "local_first": true }
+}

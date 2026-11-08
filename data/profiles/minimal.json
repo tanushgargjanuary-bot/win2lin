@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "minimal",
+  "name": "Minimal",
+  "risk_level": "low",
+  "selection": {
+    "include_groups": ["documents", "desktop"],
+    "optional_groups": [],
+    "exclude_groups": ["downloads", "pictures", "music", "videos", "d_drive"]
+  },
+  "checksums": { "mode": "standard", "algorithm": "sha256" },
+  "resume": { "enabled": true },
+  "encryption": { "default_enabled": false },
+  "policy": { "allow_secret_exclusions_override": false, "local_first": true }
+}

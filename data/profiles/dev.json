@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "dev",
+  "name": "Dev",
+  "risk_level": "expanded",
+  "selection": {
+    "include_groups": ["documents", "desktop", "downloads", "pictures", "music", "videos"],
+    "optional_groups": ["d_drive", "source_code_workspaces"],
+    "exclude_groups": ["node_modules", ".venv", "__pycache__", "build_outputs"]
+  },
+  "checksums": { "mode": "standard", "algorithm": "sha256" },
+  "resume": { "enabled": true },
+  "encryption": { "default_enabled": false },
+  "policy": { "allow_secret_exclusions_override": false, "local_first": true }
+}
