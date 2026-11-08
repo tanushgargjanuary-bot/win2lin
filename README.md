@@ -78,15 +78,25 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Copy -Resum
 
 ## Linux support
 
-`scripts/Win2Lin.sh` is **distro-flexible** and best-effort. It detects common package managers and degrades gracefully:
-- `apt` (Debian/Ubuntu/Mint/Pop!_OS)
-- `dnf`/`yum` (Fedora/RHEL family)
-- `pacman` (Arch/Manjaro/EndeavourOS)
-- `zypper` (openSUSE)
-- `apk` (Alpine)
-- `xbps` (Void)
+`scripts/Win2Lin.sh` aims for **maximum practical portability** with honest graceful degradation:
 
-On unknown distros it skips package installs and still helps you locate/restore files from the export. Package names, NVIDIA drivers, and some apps are distro-specific — install those via your distro’s normal tools.
+- **Core restore (universal goal):** locating the export and restoring safe files (`.gitconfig`, selected dot-config dirs with no-clobber, fonts, and safe SSH files only: `config`, `known_hosts`, `authorized_keys`, `*.pub` — **never** private keys/passwords/tokens/cookies) should work on almost any Linux environment that has `bash` plus basic core utilities. If tools like `find`, `cp`, or `python` are missing, it degrades and continues where possible.
+- **Package/app installs (best-effort, optional):** not literally every distro can be configured automatically. The script detects `/etc/os-release` when available, prints a clear install/limited/restore-only mode summary, and offers optional installs for common package managers:
+  - `apt`/`apt-get` (Debian/Ubuntu/Mint/Pop!_OS family)
+  - `dnf`/`yum` (Fedora/RHEL family)
+  - `pacman` (Arch/Manjaro/EndeavourOS family)
+  - `zypper` (openSUSE/SLE)
+  - `apk` (Alpine/postmarketOS family)
+  - `xbps-install` (Void)
+  - `eopkg` (Solus)
+  - `swupd` (Clear Linux; bundle names differ, conservative/best-effort)
+  - `emerge` (Gentoo; **cautious/manual guidance** only — package names/USE flags are system-specific)
+  - `nix`/`nix-env`/`nix profile` (NixOS/Nix; **declarative** — no automatic system config changes; suggests user profile/Home Manager/manual config)
+  - `rpm-ostree` (Fedora Atomic/Silverblue/Kinoite; **does not layer packages automatically** — suggests Flatpak/toolbox/distrobox)
+- **Privileges:** supports root, `sudo`, `doas`, or `pkexec` when available; if none are available, it skips privileged installs with a clear message.
+- **Safety:** asks before installs, makes no destructive changes, avoids clobbering existing user configs by default, and never restores private keys.
+
+On unknown, immutable, minimal, or unusual distros, use **restore-only/manual mode**: the export’s `C_DRIVE`/`D_DRIVE` data is still there, and you can install apps/configs with your distro’s normal tools.
 
 **Beginner-friendly starting points:** Linux Mint 22 (Cinnamon) or Ubuntu 24.04 LTS. Use dual-boot first and keep Windows for 1–2 weeks.
 
