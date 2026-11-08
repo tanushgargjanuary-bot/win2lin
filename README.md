@@ -112,12 +112,28 @@ On unknown, immutable, minimal, or unusual distros, use **restore-only/manual mo
 
 **Beginner-friendly starting points:** Linux Mint 22 (Cinnamon) or Ubuntu 24.04 LTS. Use dual-boot first and keep Windows for 1–2 weeks.
 
+## Limitations (honest)
+
+| Area | Current limit | Still fine to relax (future work)? |
+|---|---|---|
+| **Direction** | Windows → Linux only (no Linux→Linux, macOS→Linux, or Windows→Windows exporters yet) | Yes — via shared bundle/manifest contract; each direction needs own inventory/path mapping |
+| **Browser logins** | No passwords/cookies/sessions (DPAPI-locked). Requires browser sync/password-manager re-login | **No** — do not try to relax this. This is a hard safety boundary |
+| **System state** | No registry/services/drivers auto-migration; GPU/Wi-Fi/printer guidance is manual/distro-dependent | Partly — better *guidance/checklists*, never silent privileged mutation |
+| **Distro automation** | Immutable/atomic/transactional/declarative systems are restore-only/guided (Bazzite/Bluefin, MicroOS/Aeon, Vanilla, NixOS, Guix, SteamOS) | Partly — more recipes/tests, but never auto-emerge/ostree/reconfigure |
+| **Scale/robustness** | Large bundles: hashing/copy is I/O-bound and slow; resume/checkpoint and full payload hashing not yet polished | Yes — resumable, verified, chunked transfers; `rust/win2lin-verify` is metadata-first |
+| **UX** | CLI/wizard only (no GUI/TUI app) | Yes — via `docs/ui-next.md`; must reuse bundle core, not fork logic |
+| **Ecosystem** | No published releases/packages, signatures, CodeRabbit enabled, or verified distro test matrix yet | Yes — releases + checksums/signing, CI matrix, community distro reports |
+| **Data coverage** | Brave/Edge primary, Chrome optional; app mapping curated but incomplete | Yes — grow `data/app-mappings/` with reviewed entries |
+
+**Which to work on first (v1):** tests/CI → checksums/report already done → release + checksums/signing → distro test matrix.  
+**Do not relax:** secret exfiltration, silent cloud upload, auto-mutation of immutable systems, destructive mirroring.
+
 ## Code quality & review
 
 - Please open issues/PRs for bugs and improvements.
 - This repo includes a `.coderabbit.yaml` config. To enable automated PR reviews, install the [CodeRabbit GitHub App](https://github.com/apps/coderabbitai) on your fork/repo (maintainers can enable it on the upstream repo).
 - Local checks you can run (optional, if installed):
-  - PowerShell: `Invoke-ScriptAnalyzer -Path .\scripts -Recurse`
+  - PowerShell: `Invoke-ScriptAnalyzer -Path .\scripts -Recurse` / `Invoke-Pester .\tests`
   - Bash: `shellcheck .\scripts\Win2Lin.sh`
 
 ## License
