@@ -1,0 +1,83 @@
+name: Distro test report
+description: Report how Win2Lin's Linux-side restore/install guidance behaved on a specific distro.
+title: "[Distro test]: <distro> <version>"
+labels: ["testing", "linux"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to share distro compatibility results. Focus on behavior, modes, and guidance quality. Do not include personal files or secrets from export bundles.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I did not include personal export contents, passwords, cookies, private keys, or tokens.
+          required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distro / variant
+      description: Include edition/desktop if relevant (e.g., Bazzite KDE, Ubuntu 24.04, openSUSE MicroOS).
+      placeholder: Distro name and version
+    validations:
+      required: true
+  - type: textarea
+    id: os_release
+    attributes:
+      label: /etc/os-release (sanitized)
+      description: Paste relevant fields (`NAME`, `ID`, `ID_LIKE`, `VARIANT_ID`, `PRETTY_NAME`). Redact anything unusual or personal.
+      render: text
+    validations:
+      required: false
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode reported by Win2Lin.sh
+      options:
+        - install
+        - limited
+        - restore-only
+        - Not shown / unclear
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: tested
+    attributes:
+      label: What was tested?
+      description: Inventory/copy context if relevant, restore path used, and which parts were exercised.
+      placeholder: |
+        - Script: scripts/Win2Lin.sh
+        - Export path: ~/Win2Lin_export/<date>_<time> (placeholder)
+        - Tested: core restore, package guidance, fonts, gitconfig/dot-config handling
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall result
+      options:
+        - Worked as expected
+        - Worked with minor issues
+        - Guidance was unclear
+        - Restore issue
+        - Install/guidance issue
+        - Script error
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What worked, what failed, and any manual steps required. Sanitize output.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: suggestions
+    attributes:
+      label: Suggested improvement
+      description: Mapping, detection hint, guidance text, or safety fix.
+    validations:
+      required: false

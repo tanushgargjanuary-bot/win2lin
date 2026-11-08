@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest an improvement to Win2Lin.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feature ideas are welcome. Win2Lin prioritizes safety: no copying browser passwords/cookies/DPAPI secrets/private keys, safe defaults, and no destructive actions without confirmation.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What migration pain point are you trying to solve?
+      placeholder: Describe the user problem, not only the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like Win2Lin to do?
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and compatibility considerations
+      description: Note any data-safety, privacy, portability, or PowerShell/Bash compatibility concerns.
+      placeholder: e.g., affects copy scope, distro detection, restore behavior, dry-run, or manifests
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches or workarounds you considered.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Links, examples, or related issues (optional).
+    validations:
+      required: false

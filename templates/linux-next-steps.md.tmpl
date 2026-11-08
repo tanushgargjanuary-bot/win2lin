@@ -1,0 +1,108 @@
+# Win2Lin Linux Next Steps
+
+Use this checklist after copying your Win2Lin export bundle to Linux and/or
+running `scripts/Win2Lin.sh`. Work top-to-bottom; check items as you complete
+them.
+
+**Bundle path:** {{export_bundle_path}}
+**Target distro / variant:** {{target_linux}}
+**Restore mode used:** {{restore_mode}} (install / limited / restore-only / manual)
+**Date:** {{next_steps_date}}
+
+## Safety first
+
+- [ ] I understand **passwords, browser cookies/session tokens, DPAPI-locked
+      browser credentials, and private SSH/GPG keys were never copied**.
+- [ ] I will **re-login** to accounts and recreate/move secrets only through
+      secure, manual, user-approved steps.
+- [ ] I reviewed the export location and report for sensitive path details
+      before sharing.
+
+## 1) Locate and inspect the bundle
+
+- [ ] Confirm the bundle directory exists and is readable: `{{export_bundle_path}}`
+- [ ] Check for expected files/folders (names vary by exporter version/mode):
+  - [ ] `inventory.json`
+  - [ ] `log.txt` and/or `robocopy_*.log` (lite)
+  - [ ] `manifest.csv` / `copy_result.json` (advanced, if used)
+  - [ ] `C_DRIVE/` (copied user/profile data, when present)
+  - [ ] `D_DRIVE/` (copied additional drive data, when present)
+- [ ] Skim logs for errors/warnings before assuming the copy is complete.
+
+## 2) Restore safe files (review before applying)
+
+If using `Win2Lin.sh`, follow its prompts and mode summary. If restoring
+manually, copy only known-safe items.
+
+- [ ] Restore reviewed `.gitconfig` / global gitignore (no embedded secrets)
+- [ ] Restore selected dot-config directories with **no clobber** by default
+- [ ] Restore fonts (user-level first if unsure)
+- [ ] Restore **safe SSH files only**: `config`, `known_hosts`, `authorized_keys`,
+      `*.pub`
+- [ ] **Do not restore private keys** (`id_*` without `.pub`, GPG private
+      material, token files) from the bundle; handle separately and securely
+
+## 3) Re-login and account recovery
+
+- [ ] Start browser and sign into sync (Brave/Edge/Chrome/Firefox as applicable)
+- [ ] Sign into password manager / Google Password Manager
+- [ ] Verify MFA/authenticator access and recovery options
+- [ ] Sign into email, chat, cloud storage, and work accounts
+- [ ] Sign into developer services (GitHub/GitLab/package registries/cloud CLIs)
+      using fresh authentication
+
+## 4) Reinstall apps (distro-appropriate)
+
+Use `data/app-mappings/windows-to-linux.yml` and
+`data/distro-packages/README.md` as guidance. **Respect distro mutability:**
+
+- [ ] **Mutable distro:** install apps using the normal package manager; review
+      commands before running; accept prompts consciously.
+- [ ] **Immutable/atomic/transactional/declarative/managed distro:** **do not
+      auto-mutate the system**. Prefer Flatpak, distrobox/toolbox, or documented
+      manual workflows (rpm-ostree/MicroOS transactional/NixOS/Guix/Vanilla OS
+      guidance as applicable).
+
+Apps to install/verify:
+
+- [ ] Browser(s): {{browser_plan}}
+- [ ] Communication: {{communication_plan}}
+- [ ] Office/documents: {{office_plan}}
+- [ ] Media/utilities: {{utilities_plan}}
+- [ ] Development tools: {{dev_tools_plan}}
+
+## 5) Rebuild development environment
+
+- [ ] Install Git and verify identity/signing settings
+- [ ] Create or securely install SSH keys; test `ssh -T` / remote access
+- [ ] Install Node/Python/Go versions required by your projects
+- [ ] Recreate environments from manifests/lockfiles (no `node_modules`, no
+      Windows `.venv` copies)
+- [ ] Install Docker/Podman using a method supported by your distro
+- [ ] Recreate `.env`/secrets locally and securely (never copy old secrets
+      blindly)
+- [ ] Run project smoke tests/builds
+
+## 6) Validate data and workflows
+
+- [ ] Open critical documents/spreadsheets/presentations and check formatting
+- [ ] Verify photos, videos, archives, and downloads are intact
+- [ ] Confirm important project repositories build/run/test
+- [ ] Check printers, audio, camera, screen sharing, VPN, and peripherals
+- [ ] Confirm cloud sync/backup behavior is what you expect (avoid accidental
+      duplicate uploads/conflicts)
+
+## 7) Clean-up and fallback
+
+- [ ] Keep the export bundle on a safe backup until migration is verified
+- [ ] Keep Windows available for 1–2 weeks if dual-booting or uncertain
+- [ ] Record unresolved issues in `templates/migration-report.md.tmpl` or your
+      migration notes
+- [ ] After confidence is high, plan secure cleanup of temporary exports/copies
+      (do not rush disk wipes)
+
+## Notes / follow-ups
+
+- {{followup_1}}
+- {{followup_2}}
+- {{followup_3}}

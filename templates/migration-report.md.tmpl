@@ -1,0 +1,137 @@
+# Win2Lin Migration Report
+
+> Template: fill this in after running a Windows export and (optionally) after
+> Linux restore. Keep it factual. This report is for planning and verification,
+> not for storing secrets.
+
+**Generated/updated:** {{report_date}}
+**Report version:** {{report_version}}
+**Windows source machine:** {{windows_machine_name}}
+**Windows user:** {{windows_user}}
+**Export bundle path:** {{export_bundle_path}}
+**Target Linux (if known):** {{target_linux}}
+**Operator:** {{operator}}
+
+## Safety reminder
+
+- **Never copied:** passwords, browser cookies, session tokens, DPAPI-locked
+  browser credential stores, or private SSH/GPG keys.
+- **Re-login required on Linux:** browser sync/accounts, password manager,
+  email/chat/dev services, and any app that uses local secrets.
+- **Review before sharing:** this report may list usernames, device names,
+  paths, app names, and file counts. Remove sensitive details before posting.
+
+## Export summary
+
+| Field | Value |
+|---|---|
+| Export mode/tool | {{export_tool}} (lite/advanced/manual) |
+| Inventory file | {{inventory_json_path}} |
+| Manifest file | {{manifest_path_or_na}} |
+| Log file | {{log_path}} |
+| Copy result/status | {{copy_result_status}} |
+| Total selected data (approx.) | {{total_size_estimate}} |
+| Total files copied (approx.) | {{total_files_copied}} |
+| Warnings/errors | {{warnings_errors_summary}} |
+
+## Copied data
+
+List what was intentionally copied/exported. Use bundle-relative paths when
+possible (`C_DRIVE/...`, `D_DRIVE/...`).
+
+- [ ] **User profile data (`C_DRIVE`)**
+  - Source: {{c_drive_sources}}
+  - Destination in bundle: {{c_drive_bundle_path}}
+  - Notes: {{c_drive_notes}}
+- [ ] **Additional drive/data (`D_DRIVE`)**
+  - Source: {{d_drive_sources}}
+  - Destination in bundle: {{d_drive_bundle_path}}
+  - Notes: {{d_drive_notes}}
+- [ ] **Safe config restore candidates** (reviewed, non-secret)
+  - Examples: `.gitconfig`, selected dot-config folders, fonts, SSH `config` /
+    `known_hosts` / `authorized_keys` / `*.pub` only.
+  - Items: {{safe_config_items}}
+- [ ] **Other exported artifacts**
+  - Bookmarks HTML / notes / manual exports: {{manual_exports}}
+
+## Skipped items
+
+Record what was skipped and why (size, rebuildable, blocked, sensitive,
+unsupported, user choice).
+
+| Item/path/pattern | Reason skipped | Action on Linux |
+|---|---|---|
+| Browser `Login Data` / `Cookies` / credential stores | Sensitive/DPAPI-locked; never copied | Use browser sync; re-login |
+| Private keys (SSH/GPG/etc.) | Secret material; never auto-copied | Recreate or move manually with secure approval |
+| `node_modules` | Rebuildable; large/noisy | Reinstall dependencies from lockfiles |
+| `.venv` / `venv` / Python envs | Platform-specific; rebuildable | Recreate virtual envs on Linux |
+| `__pycache__` / build caches | Rebuildable | Regenerate as needed |
+| `{{skipped_path_1}}` | {{skipped_reason_1}} | {{skipped_action_1}} |
+| `{{skipped_path_2}}` | {{skipped_reason_2}} | {{skipped_action_2}} |
+
+## Apps to reinstall
+
+Use `data/app-mappings/windows-to-linux.yml` as a starting point. Verify package
+names/methods for the target distro, especially on immutable systems.
+
+| Windows app | Linux option/method | Migration strategy | Status | Notes |
+|---|---|---|---|---|
+| {{windows_app_1}} | {{linux_option_1}} | sync/manual/config/reinstall | ☐ planned ☐ installed ☐ verified | {{app_notes_1}} |
+| {{windows_app_2}} | {{linux_option_2}} | sync/manual/config/reinstall | ☐ planned ☐ installed ☐ verified | {{app_notes_2}} |
+| {{windows_app_3}} | {{linux_option_3}} | sync/manual/config/reinstall | ☐ planned ☐ installed ☐ verified | {{app_notes_3}} |
+
+## Re-login checklist
+
+Complete after Linux apps are installed and network access is ready.
+
+- [ ] Browser sync/account sign-in (Brave/Edge/Chrome/Firefox as applicable)
+- [ ] Password manager / Google Password Manager / vault unlock
+- [ ] Email/calendar accounts
+- [ ] Messaging/collaboration apps (Slack/Discord/Teams/etc.)
+- [ ] Developer services (GitHub/GitLab, package registries, cloud CLIs) — **new
+      sign-ins/tokens only; do not reuse copied secrets**
+- [ ] IDE/editor sync or settings import (VS Code/etc.)
+- [ ] MFA devices/authenticator access verified (have recovery path ready)
+- [ ] Backup/sync clients (Nextcloud/Drive/rclone/etc.) reviewed and reconnected
+- [ ] License/entitlement sign-ins (if applicable)
+
+## Dev environment setup
+
+- [ ] Git installed; `user.name`/`user.email` verified
+- [ ] `.gitconfig` reviewed and restored safely (no credential helper secrets)
+- [ ] SSH: generate new keys or manually install approved keys; test remotes
+- [ ] Node.js: install required version (distro/nvm/fnm/volta/Nix as appropriate)
+- [ ] Node projects: run dependency install from lockfiles (no `node_modules` copy)
+- [ ] Python: install required version; recreate venvs from manifests/lockfiles
+- [ ] Go: install required version; verify `go env`, PATH, and module access
+- [ ] Docker/Podman: install using distro-supported method; recreate compose/env
+      files **after reviewing secrets**
+- [ ] Editors/IDEs: reinstall extensions; fix paths, shells, SDKs, linters
+- [ ] Project-specific build tools, databases, and local services reinstalled
+
+## Manual actions
+
+Items that require human judgment or cannot be automated safely:
+
+- [ ] Verify important documents open correctly (Office formats, PDFs, media)
+- [ ] Recreate browser profiles/preferences not covered by sync
+- [ ] Reconfigure printers/scanners, VPNs, hardware drivers, peripherals
+- [ ] Recreate scheduled tasks/automation with Linux-native tools
+- [ ] Review app-specific data not captured by the export bundle
+- [ ] Confirm backups/snapshots exist before wiping/reusing Windows disks
+- [ ] Keep Windows available for 1–2 weeks (or until confidence is high)
+- [ ] {{manual_action_1}}
+- [ ] {{manual_action_2}}
+
+## Verification / sign-off
+
+- [ ] Critical files present and readable on Linux
+- [ ] Key apps installed and signed in
+- [ ] Dev workflows tested (clone/build/run/test as applicable)
+- [ ] No secrets were copied into the bundle or this report
+- [ ] Residual risks/follow-ups documented below
+
+**Residual risks / follow-ups:**
+{{residual_risks}}
+
+**Sign-off:** {{signoff_name}} — {{signoff_date}}

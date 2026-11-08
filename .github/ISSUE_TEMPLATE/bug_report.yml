@@ -1,0 +1,74 @@
+name: Bug report
+description: Report a problem with Win2Lin scripts, docs, or export/restore behavior.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please avoid sharing secrets, private keys, tokens, browser credential files, or personal data from export bundles.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I have not included passwords, cookies, private keys, DPAPI/browser credential data, or personal export contents in this report.
+          required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Win2Lin.bat
+        - scripts/Win2Lin-lite.ps1
+        - scripts/Win2Lin.ps1
+        - scripts/Win2Lin.sh
+        - Documentation / templates
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly and concisely.
+      placeholder: Include what you expected vs. what actually happened.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Provide minimal, safe steps. Use placeholder paths, not personal file names.
+      placeholder: |
+        1. Ran ...
+        2. Selected ...
+        3. Observed ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS version, PowerShell version (Windows), shell/distro (Linux), script version/commit.
+      placeholder: |
+        Windows: 11 23H2 / PowerShell 5.1
+        Linux: Ubuntu 24.04 / bash 5.x
+        Win2Lin: commit or release tag
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Paste sanitized command output or logs. Redact usernames, paths with personal data, and any secrets.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that helps diagnose the issue.
+    validations:
+      required: false

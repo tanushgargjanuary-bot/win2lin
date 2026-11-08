@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - ".github/workflows/ci.yml"
+      - "scripts/**"
+      - "Win2Lin.bat"
+      - "tests/**"
+      - ".coderabbit.yaml"
+  pull_request:
+    paths:
+      - ".github/workflows/ci.yml"
+      - "scripts/**"
+      - "Win2Lin.bat"
+      - "tests/**"
+      - ".coderabbit.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    name: ShellCheck (scripts/*.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(scripts/*.sh)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No scripts/*.sh files found; skipping."
+            exit 0
+          fi
+          echo "ShellCheck version: $(shellcheck --version | head -n 2 | tr '\n' ' ')"
+          shellcheck -S warning "${files[@]}"
+
+  powershell:
+    name: PowerShell syntax & lint (best-effort)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse PowerShell scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = Get-ChildItem -Path .\scripts -Filter *.ps1 -File -ErrorAction SilentlyContinue
+          if (-not $files) {
+            Write-Host 'No scripts/*.ps1 files found; skipping parse check.'
+            exit 0
+          }
+          $failed = $false
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors -and $errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "::error file=$($file.FullName)::PowerShell parse errors in $($file.Name)"
+              $errors | ForEach-Object { Write-Host $_.Message }
+            } else {
+              Write-Host "Parsed OK: $($file.Name)"
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Install PSScriptAnalyzer (best-effort)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -ErrorAction Stop
+
+      - name: Run PSScriptAnalyzer (best-effort)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $files = Get-ChildItem -Path .\scripts -Filter *.ps1 -File -ErrorAction SilentlyContinue
+          if (-not $files) { exit 0 }
+          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+            Write-Warning 'PSScriptAnalyzer not available; skipping lint.'
+            exit 0
+          }
+          Import-Module PSScriptAnalyzer -ErrorAction Stop
+          $results = Invoke-ScriptAnalyzer -Path .\scripts -Recurse -Severity Warning,Error -ErrorAction Continue
+          if ($results) {
+            $results | Format-Table -AutoSize
+            # Report findings but do not fail CI by default; tighten later as rules are tuned.
+            Write-Warning "PSScriptAnalyzer reported $(@($results).Count) issue(s)."
+          } else {
+            Write-Host 'PSScriptAnalyzer found no Warning/Error issues.'
+          }

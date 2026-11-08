@@ -1,0 +1,498 @@
+# Win2Lin: Windows -> Linux app mapping scaffold (data-driven)
+#
+# Purpose:
+# - Help users find Linux equivalents for common Windows apps during migration.
+# - Keep recommendations distro-agnostic where possible and package-manager-aware
+#   where relevant (Flatpak, apt, dnf, pacman, nix, etc.).
+# - Drive checklists/reports; this file is NOT an installer script.
+#
+# Safety / scope:
+# - No secrets, passwords, tokens, cookies, browser credential stores, or private
+#   keys. NEVER instruct users to copy DPAPI-locked browser data.
+# - Prefer sync/export/import flows (browser sync, account sign-in, config export).
+# - Package names and availability vary by distro/release. Treat linux_options as
+#   starting points; verify with the target distro before installing.
+# - On immutable/atomic/transactional/declarative systems (Bazzite, Bluefin,
+#   Silverblue, MicroOS/Aeon/Kalpa, Vanilla OS/abroot, NixOS, Guix System,
+#   SteamOS-managed flows), do not auto-mutate the system. Prefer Flatpak,
+#   distrobox/toolbox, or documented manual workflows.
+#
+# Schema (extensible; unknown fields should be ignored by simple consumers):
+# schema_version: 1
+# mappings:
+#   - id: stable-identifier
+#     windows:
+#       names: ["Display Name", "exe/process hints"]   # human + matching hints
+#       category: browser|dev|utility|communication|office|media|...
+#     linux_options:                                   # ordered or grouped suggestions
+#       - name: "App Name"
+#         method: flatpak|apt|dnf|pacman|nix|appimage|snap|manual|web
+#         package: "package-or-ref"                    # optional; distro-specific when method is native PM
+#         notes: "short caveat"
+#     notes: "general guidance / alternatives"
+#     migration:
+#       strategy: sync|manual|config|export-import|reinstall|web
+#       data_to_move: ["bookmarks HTML (optional)", "settings export"]  # never secrets
+#       cautions: ["Do not copy browser passwords/cookies/private keys"]
+#
+# Contributors: keep entries factual, add cautions, and prefer official sources.
+# If a package name is distro-specific, say so in package/notes.
+
+schema_version: 1
+updated: "2026-11-08"
+mappings:
+  - id: browser-brave
+    windows:
+      names: ["Brave", "brave.exe"]
+      category: browser
+    linux_options:
+      - name: Brave
+        method: flatpak
+        package: "com.brave.Browser"
+        notes: "Good cross-distro option; works well on immutable systems."
+      - name: Brave
+        method: apt
+        package: "brave-browser"
+        notes: "Requires Brave's apt repo on Debian/Ubuntu-family systems; follow official instructions."
+      - name: Brave
+        method: dnf
+        package: "brave-browser"
+        notes: "Requires Brave's repo on Fedora/RHEL-family systems; follow official instructions."
+      - name: Brave
+        method: pacman
+        package: "brave-bin"
+        notes: "Commonly an AUR package; use distro/AUR workflow carefully."
+    notes: "Use Brave Sync for bookmarks, extensions, history, and settings where supported. Export bookmarks as HTML as a backup."
+    migration:
+      strategy: sync
+      data_to_move: ["Bookmarks HTML export (optional backup)", "Extension list (review; reinstall from store)"]
+      cautions:
+        - "Never copy browser passwords, cookies, session data, or DPAPI-locked profile databases."
+        - "Re-login on Linux after sync; verify critical accounts."
+
+  - id: browser-microsoft-edge
+    windows:
+      names: ["Microsoft Edge", "msedge.exe"]
+      category: browser
+    linux_options:
+      - name: Microsoft Edge
+        method: flatpak
+        package: "com.microsoft.Edge"
+        notes: "Cross-distro option."
+      - name: Microsoft Edge
+        method: apt
+        package: "microsoft-edge-stable"
+        notes: "Requires Microsoft repo on Debian/Ubuntu-family systems; verify current package name."
+      - name: Microsoft Edge
+        method: dnf
+        package: "microsoft-edge-stable"
+        notes: "Requires Microsoft repo on Fedora/RHEL-family systems; verify current package name."
+    notes: "Use Edge/Microsoft account sync. Not all users need Edge on Linux; consider Firefox/Brave if preferred."
+    migration:
+      strategy: sync
+      data_to_move: ["Bookmarks HTML export (optional backup)"]
+      cautions:
+        - "Never copy browser passwords, cookies, or credential stores."
+        - "Review extension compatibility on Linux."
+
+  - id: browser-google-chrome
+    windows:
+      names: ["Google Chrome", "chrome.exe"]
+      category: browser
+    linux_options:
+      - name: Google Chrome
+        method: flatpak
+        package: "com.google.Chrome"
+        notes: "Cross-distro option where available."
+      - name: Google Chrome
+        method: apt
+        package: "google-chrome-stable"
+        notes: "Requires Google repo; verify current package name."
+      - name: Google Chrome
+        method: dnf
+        package: "google-chrome-stable"
+        notes: "Requires Google repo; verify current package name."
+      - name: Chromium (alternative)
+        method: flatpak
+        package: "org.chromium.Chromium"
+        notes: "Open-source base; behavior/codecs/account features may differ from Chrome."
+    notes: "Use Google account sync. Consider whether you need proprietary Chrome or can use Chromium/Firefox."
+    migration:
+      strategy: sync
+      data_to_move: ["Bookmarks HTML export (optional backup)"]
+      cautions:
+        - "Never copy passwords/cookies/credential databases."
+        - "Widevine/codec behavior can differ by packaging method; test media sites if important."
+
+  - id: browser-firefox
+    windows:
+      names: ["Mozilla Firefox", "firefox.exe"]
+      category: browser
+    linux_options:
+      - name: Firefox
+        method: flatpak
+        package: "org.mozilla.firefox"
+        notes: "Common default or easy install on many distros/immutable systems."
+      - name: Firefox
+        method: apt
+        package: "firefox"
+        notes: "Package source may be distro-packaged or vendor-packaged depending on distro (e.g., Snap/deb policies vary)."
+      - name: Firefox
+        method: dnf
+        package: "firefox"
+      - name: Firefox
+        method: pacman
+        package: "firefox"
+    notes: "Firefox is often a strong Linux-first browser choice. Use Firefox Sync for supported data."
+    migration:
+      strategy: sync
+      data_to_move: ["Bookmarks HTML export (optional backup)", "about:support/profile info for troubleshooting (no secrets)"]
+      cautions:
+        - "Never copy passwords/cookies/private keys or locked credential stores."
+
+  - id: dev-vscode
+    windows:
+      names: ["Visual Studio Code", "Code.exe", "VS Code"]
+      category: dev
+    linux_options:
+      - name: Visual Studio Code
+        method: flatpak
+        package: "com.visualstudio.code"
+        notes: "Convenient cross-distro install; sandboxing may affect terminal/SDK paths."
+      - name: Visual Studio Code
+        method: apt
+        package: "code"
+        notes: "Requires Microsoft repo on Debian/Ubuntu-family systems; verify official instructions."
+      - name: Visual Studio Code
+        method: dnf
+        package: "code"
+        notes: "Requires Microsoft repo on Fedora/RHEL-family systems; verify official instructions."
+      - name: VSCodium (alternative)
+        method: flatpak
+        package: "com.vscodium.codium"
+        notes: "Community build without Microsoft branding/telemetry defaults; extension marketplace behavior differs."
+    notes: "Use Settings Sync or export settings/extensions profile. Reinstall extensions on Linux and verify paths, shells, and SDK locations."
+    migration:
+      strategy: export-import
+      data_to_move: ["Settings Sync account (preferred)", "settings.json/keybindings/snippets exports if used", "Extension list"]
+      cautions:
+        - "Do not copy secret tokens from settings, tasks, or extension storage."
+        - "Windows-specific paths, PowerShell assumptions, and selected interpreters must be reconfigured."
+
+  - id: dev-git
+    windows:
+      names: ["Git for Windows", "git.exe"]
+      category: dev
+    linux_options:
+      - name: Git
+        method: apt
+        package: "git"
+      - name: Git
+        method: dnf
+        package: "git"
+      - name: Git
+        method: pacman
+        package: "git"
+      - name: Git
+        method: nix
+        package: "git"
+        notes: "For Nix users/profiles; do not auto-reconfigure NixOS system."
+    notes: "Git config (`~/.gitconfig`) can usually be restored safely if reviewed. Recreate SSH keys or move them only through secure, user-approved manual steps; Win2Lin restore does not copy private keys."
+    migration:
+      strategy: config
+      data_to_move: [".gitconfig (reviewed)", "Global gitignore if used", "Repository working copies (normal file copy)"]
+      cautions:
+        - "Never copy private SSH keys, GPG private keys, or credential helper secrets automatically."
+        - "Line ending settings may need adjustment (`core.autocrlf`) on Linux."
+        - "Re-test commit signing, remotes, and credential helpers after migration."
+
+  - id: dev-nodejs
+    windows:
+      names: ["Node.js", "node.exe", "npm", "nvm-windows"]
+      category: dev
+    linux_options:
+      - name: Node.js (distro package)
+        method: apt
+        package: "nodejs"
+        notes: "May lag upstream; acceptable for simple needs."
+      - name: Node.js (distro package)
+        method: dnf
+        package: "nodejs"
+      - name: Node.js (distro package)
+        method: pacman
+        package: "nodejs"
+      - name: nvm/fnm/volta (version manager)
+        method: manual
+        package: "nvm | fnm | volta"
+        notes: "Preferred when projects require specific Node versions; follow official install docs."
+      - name: Node.js via Nix
+        method: nix
+        package: "nodejs"
+        notes: "Useful for reproducible dev environments; user/profile workflow."
+    notes: "Do not copy `node_modules`. Reinstall dependencies from lockfiles (`npm ci`, `pnpm install`, `yarn install`) on Linux."
+    migration:
+      strategy: reinstall
+      data_to_move: ["Project source code", "package.json / lockfiles", ".npmrc only after removing tokens/secrets"]
+      cautions:
+        - "Never copy auth tokens from `.npmrc` or environment secrets."
+        - "Native modules may need rebuilds; install build tools as appropriate."
+
+  - id: dev-python
+    windows:
+      names: ["Python", "python.exe", "py.exe", "pip"]
+      category: dev
+    linux_options:
+      - name: Python 3 (distro package)
+        method: apt
+        package: "python3 python3-pip python3-venv"
+      - name: Python 3 (distro package)
+        method: dnf
+        package: "python3 python3-pip"
+      - name: Python 3 (distro package)
+        method: pacman
+        package: "python python-pip"
+      - name: pyenv/uv/conda (workflow-specific)
+        method: manual
+        package: "pyenv | uv | conda/mamba"
+        notes: "Choose based on project needs; avoid copying Windows virtual environments."
+    notes: "Do not copy `.venv`/`venv`. Recreate environments on Linux from `requirements.txt`, `pyproject.toml`, `poetry.lock`, `uv.lock`, etc."
+    migration:
+      strategy: reinstall
+      data_to_move: ["Project source code", "Dependency manifests/lockfiles", "Reviewed pip/uv config without credentials"]
+      cautions:
+        - "Never copy API keys, `.pypirc` passwords, or private package index credentials."
+        - "Some packages have Linux-specific system dependencies (build headers, libraries)."
+
+  - id: dev-go
+    windows:
+      names: ["Go", "go.exe", "Golang"]
+      category: dev
+    linux_options:
+      - name: Go (distro package)
+        method: apt
+        package: "golang-go"
+        notes: "Version may lag; check project `go.mod` requirements."
+      - name: Go (distro package)
+        method: dnf
+        package: "golang"
+      - name: Go (distro package)
+        method: pacman
+        package: "go"
+      - name: Official Go tarball / version manager
+        method: manual
+        package: "go"
+        notes: "Use when you need a specific Go version; follow official install docs."
+    notes: "Go modules make reinstall/rebuild straightforward. Keep source and module files; module cache can be rebuilt."
+    migration:
+      strategy: reinstall
+      data_to_move: ["Project source code", "go.mod / go.sum", "Reviewed GOPATH/GOBIN customizations if any"]
+      cautions:
+        - "Do not copy private module credentials/tokens."
+        - "Recreate PATH/GOPATH/bin settings for Linux shell startup files."
+
+  - id: dev-docker
+    windows:
+      names: ["Docker Desktop", "docker.exe"]
+      category: dev
+    linux_options:
+      - name: Docker Engine
+        method: manual
+        package: "docker-ce docker-ce-cli containerd.io"
+        notes: "Use official Docker docs for your distro; daemon/service setup differs from Docker Desktop."
+      - name: Docker Engine (distro package)
+        method: apt
+        package: "docker.io"
+        notes: "May differ from upstream Docker CE; verify features needed."
+      - name: Docker Engine (distro package)
+        method: dnf
+        package: "moby-engine"
+        notes: "Fedora package name may be moby-engine; verify."
+      - name: Podman (alternative)
+        method: apt
+        package: "podman"
+        notes: "Daemonless alternative; Docker CLI compatibility varies by workflow."
+      - name: Podman (alternative)
+        method: dnf
+        package: "podman"
+      - name: Podman (alternative)
+        method: pacman
+        package: "podman"
+    notes: "Docker Desktop concepts (VM, WSL integration, GUI settings) do not map 1:1 to Linux. Recreate Compose files/images; re-pull images where possible."
+    migration:
+      strategy: reinstall
+      data_to_move: ["Dockerfiles", "compose.yml/docker-compose.yml", "Build contexts/source", "Exported non-sensitive config/docs"]
+      cautions:
+        - "Do not copy secrets from `.env` files, registry auth, or compose overrides without review."
+        - "Bind-mount paths and file permissions often need Linux-specific adjustments."
+        - "On immutable systems, prefer supported container tooling workflows and manual guidance."
+
+  - id: utility-7zip
+    windows:
+      names: ["7-Zip", "7z.exe"]
+      category: utility
+    linux_options:
+      - name: 7zip / p7zip
+        method: apt
+        package: "7zip"
+        notes: "Package name varies (`7zip`, `p7zip-full`); check distro repos."
+      - name: 7zip / p7zip
+        method: dnf
+        package: "p7zip p7zip-plugins"
+      - name: 7zip / p7zip
+        method: pacman
+        package: "7zip"
+      - name: File Roller / Ark (GUI)
+        method: flatpak
+        package: "org.gnome.FileRoller | org.kde.ark"
+        notes: "Desktop archive managers; backend format support varies."
+    notes: "Archive files themselves are normal data and can be copied. Reinstall extraction tools on Linux."
+    migration:
+      strategy: reinstall
+      data_to_move: ["Archive files (`.7z`, `.zip`, `.tar.*`, etc.) as regular user data"]
+      cautions:
+        - "Encrypted archives require user-known passwords; Win2Lin never captures passwords."
+
+  - id: comm-slack
+    windows:
+      names: ["Slack", "slack.exe"]
+      category: communication
+    linux_options:
+      - name: Slack
+        method: flatpak
+        package: "com.slack.Slack"
+        notes: "Common on immutable distros and general desktops."
+      - name: Slack (official package)
+        method: manual
+        package: "slack"
+        notes: "Slack provides distro-specific downloads/repos; verify current official method."
+    notes: "Slack is account/workspace-based. Sign in again on Linux; no local credential copy."
+    migration:
+      strategy: manual
+      data_to_move: ["Workspace list (notes)", "Downloaded files already in user folders"]
+      cautions:
+        - "Never copy Slack tokens/cookies/local auth databases."
+        - "Reconfigure notifications, microphone/camera permissions, and startup behavior on Linux."
+
+  - id: comm-discord
+    windows:
+      names: ["Discord", "Discord.exe"]
+      category: communication
+    linux_options:
+      - name: Discord
+        method: flatpak
+        package: "com.discordapp.Discord"
+        notes: "Popular cross-distro option."
+      - name: Discord (official tarball/package)
+        method: manual
+        package: "discord"
+        notes: "Verify official Linux download; updates/packaging vary by method."
+    notes: "Sign in again on Linux. Review screen/audio capture behavior (Wayland/X11/PipeWire) after install."
+    migration:
+      strategy: manual
+      data_to_move: ["Downloaded files already in user folders"]
+      cautions:
+        - "Never copy Discord tokens/cookies/session data."
+        - "Test screen sharing and audio routing on the target desktop environment."
+
+  - id: office-microsoft-365
+    windows:
+      names: ["Microsoft Office", "Microsoft 365", "Word", "Excel", "PowerPoint", "OUTLOOK.EXE"]
+      category: office
+    linux_options:
+      - name: Microsoft 365 (web)
+        method: web
+        package: "https://www.microsoft365.com/"
+        notes: "Most compatible option for many users; requires browser/sign-in."
+      - name: LibreOffice
+        method: flatpak
+        package: "org.libreoffice.LibreOffice"
+        notes: "Strong local office suite; complex Office documents may need review."
+      - name: LibreOffice
+        method: apt
+        package: "libreoffice"
+      - name: LibreOffice
+        method: dnf
+        package: "libreoffice"
+      - name: OnlyOffice (alternative)
+        method: flatpak
+        package: "org.onlyoffice.desktopeditors"
+        notes: "Alternative with different compatibility/profile; evaluate with sample documents."
+    notes: "Copy documents as normal data. Test important Word/Excel/PowerPoint files for layout/macros/fonts before decommissioning Windows."
+    migration:
+      strategy: reinstall
+      data_to_move: ["Documents/spreadsheets/presentations", "Templates", "Fonts (if licensed/allowed)"]
+      cautions:
+        - "Macros/VBA, advanced Excel features, and proprietary fonts may not behave identically."
+        - "Keep Windows available for compatibility checks during the transition."
+
+  - id: media-vlc
+    windows:
+      names: ["VLC media player", "vlc.exe"]
+      category: media
+    linux_options:
+      - name: VLC
+        method: flatpak
+        package: "org.videolan.VLC"
+      - name: VLC
+        method: apt
+        package: "vlc"
+      - name: VLC
+        method: dnf
+        package: "vlc"
+        notes: "May require appropriate RPM Fusion/repos depending on codecs and distro policy."
+      - name: VLC
+        method: pacman
+        package: "vlc"
+    notes: "Media files copy normally. Codec availability can depend on distro, repos, and packaging method."
+    migration:
+      strategy: reinstall
+      data_to_move: ["Media files already in user folders (Music/Videos/etc.)", "Playlists if you intentionally exported them"]
+      cautions:
+        - "Do not assume codec packs are identical across distros; test key formats."
+
+  - id: media-spotify
+    windows:
+      names: ["Spotify", "Spotify.exe"]
+      category: media
+    linux_options:
+      - name: Spotify
+        method: flatpak
+        package: "com.spotify.Client"
+        notes: "Common Linux install route."
+      - name: Spotify (web)
+        method: web
+        package: "https://open.spotify.com/"
+        notes: "Useful fallback; feature parity can differ."
+    notes: "Spotify is account-based. Downloaded/offline cache is not a migration target; sign in and reconfigure downloads if supported."
+    migration:
+      strategy: manual
+      data_to_move: ["Playlists are account-based (no local copy needed)", "Locally owned audio files as normal data"]
+      cautions:
+        - "Never copy app auth tokens/cookies."
+        - "DRM/offline content must be managed by the app after sign-in."
+
+  - id: media-obs-studio
+    windows:
+      names: ["OBS Studio", "obs64.exe"]
+      category: media
+    linux_options:
+      - name: OBS Studio
+        method: flatpak
+        package: "com.obsproject.Studio"
+        notes: "Good cross-distro option; check plugin/screen-capture expectations."
+      - name: OBS Studio
+        method: apt
+        package: "obs-studio"
+      - name: OBS Studio
+        method: dnf
+        package: "obs-studio"
+      - name: OBS Studio
+        method: pacman
+        package: "obs-studio"
+    notes: "Scene/profile exports may transfer, but plugins, capture sources, device names, and paths often need Linux-specific setup."
+    migration:
+      strategy: export-import
+      data_to_move: ["Scene collections/profiles exported from OBS", "Media assets used by scenes"]
+      cautions:
+        - "Do not assume Windows capture plugins/devices work on Linux."
+        - "Re-test audio devices, screen/window capture, and hardware encoding."

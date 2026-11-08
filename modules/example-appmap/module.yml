@@ -1,0 +1,59 @@
+schema_version: 1
+id: example-appmap
+name: "Example: Windows→Linux app mapping"
+version: "0.1.0"
+description: "Tiny data-only module illustrating safe app-mapping suggestions for Win2Lin."
+license: "MIT"
+authors:
+  - name: "Win2Lin contributors"
+
+compat:
+  win2lin_api: ">=0.1 <1.0"
+  platforms: [windows, linux]
+  directions: [windows-to-linux]
+
+capabilities:
+  - map
+  - render
+
+entrypoints:
+  data:
+    - path: ../data/app-mappings/windows-to-linux.yml
+      kind: app-mapping
+      notes: "References the repository's safe mapping catalog; no module-local secret data."
+
+hooks: {}
+
+permissions:
+  filesystem:
+    read: [module_data, inventory]
+    write: [module_output]
+  network: deny
+  process: deny
+  secrets: deny
+  system_mutation: deny
+
+inputs:
+  - name: inventory
+    type: win2lin.inventory.json
+    required: false
+    notes: "Optional safe inventory facts (e.g., app names). Must never include secrets."
+  - name: app_mappings
+    type: win2lin.app-mapping
+    required: false
+
+outputs:
+  - name: suggestions
+    type: win2lin.app-suggestions
+    path: module_output/example-appmap-suggestions.json
+    notes: "Advisory suggestions/checklist items only; host decides rendering."
+
+safety:
+  handles_secrets: false
+  executable_hooks: false
+  review_status: example
+  notes:
+    - "Data-only example: no hooks, no network, no process execution, no system mutation."
+    - "Never suggests copying browser passwords/cookies/session data or private keys."
+    - "Package names and Flatpak IDs are starting points; verify against the target distro/release."
+    - "On immutable/atomic/transactional/declarative/managed systems, guidance must remain manual (e.g., Flatpak/distrobox)."
