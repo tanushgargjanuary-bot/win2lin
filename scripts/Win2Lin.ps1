@@ -340,7 +340,6 @@ function Copy-WithLiveProgress {
   $blockedExts = @('.ldb','.log','.key','.pfx','.kdbx','.vault')
   $blockedNames = @('login data','login data-journal','cookies','web data','local state','secure preferences','preferences','history','bookmarks')
   $skipDirsDefault = @('node_modules','.venv','venv','__pycache__','$recycle.bin','system volume information','win2lin_export')
-  $skipDirsHeavy = @()
 
   if ($KeepHeavyMode) { $skipDirsDefault = @('$recycle.bin','system volume information','win2lin_export') }
 

@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# CodeRabbit config for Win2Lin
+# CodeRabbit config for Win2Lin — STRICT review mode
 # Enable reviews by installing the CodeRabbit GitHub App: https://github.com/apps/coderabbitai
 
 language: en-US
-tone_instructions: "Be concise and practical. Prioritize security, data safety, and cross-platform correctness."
+tone_instructions: "Be thorough and strict. Prioritize security, data safety, cross-platform correctness, and secret handling. Flag any potential credential leak, DPAPI misuse, destructive operation, path traversal, or silent data loss. Prefer robust built-in tools (robocopy) over custom engines. Do not be lenient on safety issues."
 
 reviews:
-  profile: chill
-  request_changes_workflow: false
+  profile: assertive
+  request_changes_workflow: true
   high_level_summary: true
   poem: false
   review_status: true
@@ -15,19 +15,34 @@ reviews:
   path_filters:
     - "!**/Win2Lin_export*/**"
     - "!**/*.log"
+    - "!**/target/**"
   path_instructions:
     - path: "scripts/*.ps1"
       instructions: |
-        Review for: data loss risks, credential/secret handling (never copy browser passwords/cookies/DPAPI material),
+        STRICT review. Check for: data loss risks, credential/secret handling (NEVER copy browser passwords/cookies/DPAPI material),
         path traversal/self-copy bugs, OneDrive path handling, PowerShell 5.1 + 7 compatibility, quoting/space-in-path issues,
-        and safe defaults (dry-run, no destructive mirroring). Prefer robust built-in tools (robocopy) over custom copy engines when appropriate.
+        safe defaults (dry-run, no destructive mirroring), atomic copy correctness, checksum integrity, and no-clobber behavior.
+        Flag any hardcoded secrets, unsafe Invoke-Expression, or unvalidated user input. Verify error handling covers edge cases.
     - path: "scripts/*.sh"
       instructions: |
-        Review for: safe defaults, quoting, portability (Ubuntu/Mint/Fedora), idempotency, and avoiding destructive operations
-        without confirmation. Never copy or restore private keys/tokens.
+        STRICT review. Check for: safe defaults, quoting, portability (Ubuntu/Mint/Fedora/Arch/Alpine/Void/openSUSE),
+        idempotency, no destructive operations without confirmation, immutable/atomic system safety (never auto-mutate),
+        no private key/token restoration, no-clobber behavior, and proper privilege handling.
     - path: "Win2Lin.bat"
       instructions: |
-        Review for: correct quoting with spaces, safe defaults, and clear user prompts.
+        STRICT review. Check for: correct quoting with spaces, safe defaults, clear user prompts, no blind execution,
+        proper error handling, and no sensitive data in batch variables.
+    - path: "rust/**"
+      instructions: |
+        STRICT review. Check for: memory safety, error handling, path traversal, checksum format compatibility
+        with PowerShell implementation, and no unsafe file operations.
+    - path: "tests/**"
+      instructions: |
+        STRICT review. Check for: test coverage completeness, no real secrets in fixtures,
+        safety boundary enforcement, and correct edge-case handling.
+  auto_review:
+    enabled: true
+    drafts: false
 
 chat:
   auto_reply: true

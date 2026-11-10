@@ -130,7 +130,7 @@ detect_distro() {
     nobara) IMMUTABLE_HINT="${IMMUTABLE_HINT} Nobara(Fedora-based,mutable)" ;;
     ultramarine) IMMUTABLE_HINT="${IMMUTABLE_HINT} Ultramarine(Fedora-based,mutable)" ;;
     bazzite|bluefin|aurora) IMMUTABLE_HINT="${IMMUTABLE_HINT} Universal-Blue/Fedora-Atomic(immutable)" ;;
-    microos|opensuse-microos|"opensuse-microos"|"opensuse-tumbleweed") : ;; # refined below
+    microos|opensuse-microos|opensuse-tumbleweed) : ;; # transactional/immutable handled below
     aeon|kalpa) IMMUTABLE_HINT="${IMMUTABLE_HINT} openSUSE-${DISTRO_ID}(transactional/immutable)" ;;
     vanilla) IMMUTABLE_HINT="${IMMUTABLE_HINT} Vanilla-OS(managed/immutable)" ;;
     guix) IMMUTABLE_HINT="${IMMUTABLE_HINT} Guix(declarative/managed)" ;;
