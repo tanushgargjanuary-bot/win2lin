@@ -263,4 +263,4 @@ MIT — see [LICENSE](./LICENSE).
 
 <p align="center">
   <sub>Built for people who want to switch to Linux without losing their mind — or their data.</sub>
-</p>
+</p># CodeRabbit review trigger
