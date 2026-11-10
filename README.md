@@ -1,21 +1,58 @@
 # Win2Lin
 
-**Win2Lin** helps you move from Windows to Linux with less pain.
+**Win2Lin** is a safe, practical toolkit for moving from **Windows to Linux** with less pain. It scans your Windows PC, exports your important files (never passwords), and gives you a clear, step-by-step plan for reinstalling apps and restoring access on Linux.
 
-It scans your Windows machine, exports your important files, and gives you a clear checklist for reinstalling apps and restoring access on Linux. It **does not** copy browser passwords/cookies (Windows locks them with DPAPI) — use browser sync instead.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=github-actions&logoColor=white)](.github/workflows/ci.yml)
+[![CodeRabbit](https://img.shields.io/badge/CodeRabbit-PR%20Reviews-FF6B35?logo=coderabbit&logoColor=white)](https://github.com/apps/coderabbitai)
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)](scripts/Win2Lin.ps1)
+[![Rust](https://img.shields.io/badge/Rust-Optional%20Accelerator-orange?logo=rust&logoColor=white)](rust/win2lin-verify)
 
-## Why this exists
+---
 
-Switching to Linux is usually easy for files and hard for *everything around* them: where configs live, which apps you used, browser logins, and "what did I forget?" This tool makes that process safer and more repeatable.
+## Table of contents
+
+- [Why Win2Lin?](#why-win2lin)
+- [What's included](#whats-included)
+- [Quick start (Windows)](#quick-start-windows)
+- [What gets copied (and what doesn't)](#what-gets-copied-and-what-doesnt)
+- [Safety guarantees](#safety-guarantees)
+- [Command-line usage](#command-line-usage)
+- [Linux support](#linux-support)
+- [Limitations](#limitations)
+- [Advanced tools](#advanced-tools)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
+
+---
+
+## Why Win2Lin?
+
+Switching to Linux is usually easy for **files** and hard for *everything around them*: where configs live, which apps you used, browser logins, and "what did I forget?" Win2Lin makes that process **safer and more repeatable** by:
+
+- Scanning your Windows machine (apps, dev tools, browser profiles, fonts, git repos)
+- Copying only your user data (Documents, Desktop, Downloads, Pictures, Videos, Music, D:\)
+- Giving you a clear **re-login checklist** (browser sync, password manager, apps)
+- Supporting **100+ Linux distros** with honest, safe graceful degradation
+- **Never** copying browser passwords, cookies, private keys, or DPAPI secrets
+
+---
 
 ## What's included
 
 | File | Purpose | When to use |
 |---|---|---|
-| `Win2Lin.bat` | Double-click wizard (Inventory / Copy preview / Copy) | **Most users** |
-| `scripts/Win2Lin-lite.ps1` | Simple exporter using `robocopy` (built into Windows) | **Recommended** if you want fewer moving parts |
-| `scripts/Win2Lin.ps1` | Advanced exporter (richer inventory, CSV manifest, custom copy engine) | When you want detailed manifests/progress features |
+| `Win2Lin.bat` | Double-click wizard (Inventory / Dry-run / Copy) | **Most users** |
+| `scripts/Win2Lin-lite.ps1` | Simple exporter using `robocopy` (built into Windows) | **Recommended** — fewer moving parts |
+| `scripts/Win2Lin.ps1` | Advanced exporter (richer inventory, CSV manifest, custom copy engine) | When you want detailed manifests/progress |
 | `scripts/Win2Lin.sh` | Linux-side helper (installs common tools, restores safe configs) | After copying the export to Linux |
+| `scripts/Verify-Win2LinBundle.ps1` | SHA-256 checksum write/verify | Integrity verification |
+| `scripts/New-Win2LinReport.ps1` | Migration report generator | Post-export planning |
+| `scripts/New-Win2LinRecoveryKit.ps1` | Disaster recovery checklist | Backup/recovery planning |
+| `rust/win2lin-verify/` | Optional Rust accelerator (same checksum format) | CI / large bundles |
+
+---
 
 ## Quick start (Windows)
 
@@ -35,6 +72,45 @@ Switching to Linux is usually easy for files and hard for *everything around* th
    ```
 7. **Re-login** (in order): browser sync → Google Password Manager → your key apps (e.g. IDEs, dev tools).
 
+---
+
+## What gets copied (and what doesn't)
+
+### Copied (by default)
+- Your user folders: **Documents, Desktop, Downloads, Pictures, Videos, Music**
+- `D:\` (unless you skip it with `-SkipD`)
+- **Never copied:** `node_modules`, `.venv`, `__pycache__`, recycle bin, system volume info (these are better recreated on Linux)
+
+### Never copied (hard safety boundary)
+- Browser `Login Data`, `Cookies`, `Web Data`, `Local Storage`, `IndexedDB`, `Preferences`, `Secure Preferences`, `Local State`, `History`, `Sessions`
+- DPAPI/keychain-protected credential stores, SAM/security hives
+- `pagefile.sys`, `hiberfil.sys`, `swapfile.sys`
+- Private SSH keys (`id_rsa`, `id_ed25519`), `*.pfx`, `*.kdbx`, `.aws/.azure/.gnupg` private material
+- `C:\Windows`, `C:\Program Files`, `C:\ProgramData`
+
+> **Why?** Windows locks these with DPAPI — they're useless on Linux and copying them would create a security risk. Use **browser sync** and **password manager** instead.
+
+### Browser profiles (metadata only)
+The script records **profile counts, extension counts, and sizes** — never password/cookie contents. It also checks whether browser sync folders exist (heuristic, not proof).
+
+---
+
+## Safety guarantees
+
+| Guarantee | Detail |
+|---|---|
+| **Local-first** | Default export location is `C:\Win2Lin_export\...` (not OneDrive) — no accidental cloud upload |
+| **No secret exfiltration** | Passwords, cookies, tokens, private keys are never copied/exported/restored |
+| **Self-copy guard** | Destination inside a source folder = hard abort (prevents infinite loops) |
+| **Dry-run first** | Every copy path supports preview mode (no files copied) |
+| **No destructive mirror** | No `/MIR`/`--Purge`/`--Delete` operations; no-clobber by default |
+| **Atomic copies** | Advanced exporter uses temp+rename (`.part.<GUID>`) — incomplete files never become final |
+| **Checksums** | SHA-256 metadata checksums written post-copy; `Verify` mode is read-only (exit `0`=OK, `2`=BAD/MISSING) |
+| **Immutable Linux** | Never auto-mutates rpm-ostree/Atomic, transactional, NixOS, Guix, Vanilla OS, or SteamOS systems |
+| **Read-only verify** | `Verify-Win2LinBundle.ps1 -Mode Verify` never modifies payload |
+
+---
+
 ## Command-line usage
 
 ### Lite (recommended)
@@ -49,93 +125,142 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin-lite.ps1 -Mode Copy -
 # Real copy
 powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin-lite.ps1 -Mode Copy
 
-# Skip D:\
+# Skip D:\ drive
 powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin-lite.ps1 -Mode Copy -SkipD
+
+# Minimal profile (Documents + Desktop only)
+powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin-lite.ps1 -Mode Copy -Profile Minimal
 ```
 
 ### Advanced
 
 ```powershell
+# Inventory + rich metadata
 powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Inventory
+
+# Preview
 powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Copy -DryRun
+
+# Real copy (resume on, no-clobber)
 powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Copy -Resume
+
+# Dev profile with code folder
+powershell -ExecutionPolicy Bypass -File .\scripts\Win2Lin.ps1 -Mode Copy -Profile Dev -IncludePath C:\Projects -DryRun
 ```
 
-## What gets copied
+### Tools
 
-**Copied (by default):** your user folders — Documents, Desktop, Downloads, Pictures, Videos, Music — and `D:\` (unless you skip it).
+```powershell
+# Generate migration report from bundle
+.\scripts\New-Win2LinReport.ps1 -BundlePath C:\Win2Lin_export\<date>
 
-**Skipped (common, safer/smaller):** `node_modules`, `.venv`, `__pycache__`, recycle bin/system volume info. These are usually better recreated on Linux.
+# Generate recovery checklist
+.\scripts\New-Win2LinRecoveryKit.ps1 -BundlePath C:\Win2Lin_export\<date>
 
-**Never copied:** browser `Login Data`, `Cookies`, `Web Data`, and other credential/DPAPI-locked material. The Linux side requires you to log in again — that's by design.
+# Verify bundle integrity
+.\scripts\Verify-Win2LinBundle.ps1 -BundlePath C:\Win2Lin_export\<date> -Mode Verify
 
-## Safety notes
+# Write full payload checksums (slow, opt-in)
+.\scripts\Verify-Win2LinBundle.ps1 -BundlePath C:\Win2Lin_export\<date> -Mode Write -IncludePayload
+```
 
-- Default export location is **local** (`C:\Win2Lin_export\...`), not OneDrive, to avoid accidental cloud upload of inventory manifests.
-- The scripts refuse to export **inside** a source folder (prevents self-copy loops).
-- Use **Dry Run** first. Keep Windows for at least 1–2 weeks after switching.
-- This tool is provided as-is. Review the scripts before running, especially if you add custom copy roots.
+---
 
 ## Linux support
 
-`scripts/Win2Lin.sh` aims for **maximum practical portability** with honest, safe graceful degradation. It uses **best-effort detection/guidance** from `/etc/os-release` (`ID`, `ID_LIKE`, `VARIANT_ID`, `PRETTY_NAME`) and command/presence hints — **not every new or trending distro has been tested**, but core restore is designed to remain portable.
+`scripts/Win2Lin.sh` aims for **maximum practical portability** with honest, safe graceful degradation. It uses `/etc/os-release` (`ID`, `ID_LIKE`, `VARIANT_ID`, `PRETTY_NAME`) and command/presence hints — **not every new or trending distro has been tested**, but core restore is designed to remain portable.
 
-- **Core restore (universal goal):** locating the export and restoring safe files (`.gitconfig`, selected dot-config dirs with no-clobber, fonts, and safe SSH files only: `config`, `known_hosts`, `authorized_keys`, `*.pub` — **never** private keys/passwords/tokens/cookies) should work on almost any Linux environment that has `bash` plus basic core utilities. If tools like `find`, `cp`, or `python` are missing, it degrades and continues where possible.
-- **Modes:** the script prints a clear mode summary — **`install`** (mutable systems, asks for confirmation before best-effort installs), **`limited`** (best-effort/manual guidance), or **`restore-only`** (no automatic system mutation) — plus core restore.
-- **Safety rule:** Win2Lin **never auto-mutates immutable/atomic/transactional/declarative/managed systems** (no `rpm-ostree` layering, no automatic `transactional-update` package installs, no NixOS system rebuild, no `guix system reconfigure`, no `abroot`/managed system changes). It defaults to skipping system package mutation and giving manual guidance.
+### Core restore (universal goal)
+Locating the export and restoring safe files (`.gitconfig`, selected dot-config dirs with no-clobber, fonts, and safe SSH files only: `config`, `known_hosts`, `authorized_keys`, `*.pub` — **never** private keys/passwords/tokens/cookies) should work on almost any Linux environment that has `bash` plus basic core utilities. If tools like `find`, `cp`, or `python` are missing, it degrades and continues where possible.
+
+### Modes
+The script prints a clear mode summary — **`install`** (mutable systems, asks for confirmation before best-effort installs), **`limited`** (best-effort/manual guidance), or **`restore-only`** (no automatic system mutation) — plus core restore.
+
+### Safety rule
+Win2Lin **never auto-mutates immutable/atomic/transactional/declarative/managed systems** (no `rpm-ostree` layering, no automatic `transactional-update` package installs, no NixOS system rebuild, no `guix system reconfigure`, no `abroot`/managed system changes). It defaults to skipping system package mutation and giving manual guidance.
 
 ### Mutable families (best-effort install mode, confirmed)
+- `apt`/`apt-get`: Debian, Ubuntu, Linux Mint, Pop!_OS, Zorin OS, elementary OS, KDE neon, TUXEDO OS
+- `dnf`/`yum`: Fedora/RHEL family, including mutable Fedora derivatives (Nobara, Ultramarine)
+- `pacman`: Arch family — CachyOS, Garuda, EndeavourOS, blendOS, Manjaro, **Omarchy**
+- `zypper`: mutable openSUSE Leap/Tumbleweed/SLE
+- `apk`: Alpine/postmarketOS
+- `xbps-install`: Void
+- `eopkg`: Solus
 
-- `apt`/`apt-get`: Debian, Ubuntu, Linux Mint, **Pop!_OS**, **Zorin OS**, **elementary OS**, **KDE neon**, **TUXEDO OS**, and related derivatives.
-- `dnf`/`yum`: Fedora/RHEL family, including mutable Fedora derivatives such as **Nobara** and **Ultramarine** when `dnf` is available.
-- `pacman`: Arch family, including **CachyOS**, **Garuda**, **EndeavourOS**, **blendOS**, Manjaro, and **Omarchy** (mutable Arch-based systems; installs are always confirmed).
-- `zypper`: mutable openSUSE Leap/Tumbleweed/SLE systems.
-- `apk`: Alpine/postmarketOS family.
-- `xbps-install`: Void.
-- `eopkg`: Solus.
-
-### Atomic / immutable / transactional / declarative / managed (restore-only or limited guidance; no auto system mutation)
-
-- **Universal Blue / Fedora Atomic (rpm-ostree/OSTree):** **Bazzite**, **Bluefin**, **Aurora**, Silverblue, Kinoite, etc. No automatic `rpm-ostree install`/layering. Suggest **Flatpak**, **distrobox/toolbox**, Homebrew-on-Linux if relevant, or careful manual `rpm-ostree` workflow.
-- **openSUSE MicroOS / Aeon / Kalpa (transactional):** detected via `ID`/`VARIANT_ID`/`ID_LIKE`/`PRETTY_NAME` and/or `transactional-update`. **No automatic `transactional-update` package install.** Suggest Flatpak, distrobox, or a manual transactional workflow.
-- **Vanilla OS (v2+ / managed):** may use `abroot`/`apx`; treated as managed/immutable. **No automatic system package mutation.** Suggest `apx`, Flatpak, distrobox, or manual steps.
-- **Guix System / Guix:** detected via `guix`, `ID=guix`, or `/gnu/store`. **No automatic system reconfiguration.** Suggest `guix install` (user profile), Guix Home, or manual config; core restore still works.
-- **SteamOS:** detected via SteamOS hints (for example `/etc/os-release`, `/etc/steamos-release`, `steamos-readonly`). Treated cautiously because system partitions/readonly/managed state can be involved; defaults to **restore-only/limited guidance**. Suggest Flatpak/distrobox; manage system packages manually only if you understand SteamOS implications.
-- **NixOS / Nix variants:** declarative; **no automatic system rebuild/config changes**. Suggest `nix profile install`, Home Manager, or manual Nix config.
-- **Clear Linux (`swupd`):** bundle names differ; conservative/best-effort guidance only.
-- **Gentoo (`emerge`):** cautious/manual guidance only (package names/USE flags are system-specific).
-
-- **Privileges:** supports root, `sudo`, `doas`, or `pkexec` when available; if none are available, it skips privileged installs with a clear message.
-- **Safety details:** asks before installs, makes no destructive changes, avoids clobbering existing user configs by default, and never restores private keys.
-
-On unknown, immutable, minimal, or unusual distros, use **restore-only/manual mode**: the export’s `C_DRIVE`/`D_DRIVE` data is still there, and you can install apps/configs with your distro’s normal tools.
+### Atomic / immutable / transactional / declarative / managed (restore-only or limited guidance)
+- **Universal Blue / Fedora Atomic (rpm-ostree/OSTree):** Bazzite, Bluefin, Aurora, Silverblue, Kinoite — no auto `rpm-ostree install`; use Flatpak/distrobox/toolbox/Homebrew or manual
+- **openSUSE MicroOS / Aeon / Kalpa (transactional):** no auto `transactional-update`; Flatpak/distrobox/manual
+- **Vanilla OS (v2+ / managed):** `abroot`/`apx`; no system mutation; use `apx`, Flatpak, distrobox
+- **Guix System / Guix:** no `guix system reconfigure`; user-profile `guix install` or Guix Home
+- **SteamOS:** restore-only by default (readonly/managed); Flatpak/distrobox
+- **NixOS / Nix variants:** no system rebuild; `nix profile install`, Home Manager, or manual config
+- **Clear Linux (`swupd`):** conservative/best-effort bundle names
+- **Gentoo (`emerge`):** cautious/manual guidance only
 
 **Beginner-friendly starting points:** Linux Mint 22 (Cinnamon) or Ubuntu 24.04 LTS. Use dual-boot first and keep Windows for 1–2 weeks.
 
+---
+
 ## Limitations (honest)
 
-| Area | Current limit | Still fine to relax (future work)? |
+| Area | Current limit | Can relax (future)? |
 |---|---|---|
-| **Direction** | Windows → Linux only (no Linux→Linux, macOS→Linux, or Windows→Windows exporters yet) | Yes — via shared bundle/manifest contract; each direction needs own inventory/path mapping |
-| **Browser logins** | No passwords/cookies/sessions (DPAPI-locked). Requires browser sync/password-manager re-login | **No** — do not try to relax this. This is a hard safety boundary |
-| **System state** | No registry/services/drivers auto-migration; GPU/Wi-Fi/printer guidance is manual/distro-dependent | Partly — better *guidance/checklists*, never silent privileged mutation |
-| **Distro automation** | Immutable/atomic/transactional/declarative systems are restore-only/guided (Bazzite/Bluefin, MicroOS/Aeon, Vanilla, NixOS, Guix, SteamOS) | Partly — more recipes/tests, but never auto-emerge/ostree/reconfigure |
-| **Scale/robustness** | Large bundles: hashing/copy is I/O-bound and slow; resume/checkpoint and full payload hashing not yet polished | Yes — resumable, verified, chunked transfers; `rust/win2lin-verify` is metadata-first |
-| **UX** | CLI/wizard only (no GUI/TUI app) | Yes — via `docs/ui-next.md`; must reuse bundle core, not fork logic |
-| **Ecosystem** | No published releases/packages, signatures, CodeRabbit enabled, or verified distro test matrix yet | Yes — releases + checksums/signing, CI matrix, community distro reports |
-| **Data coverage** | Brave/Edge primary, Chrome optional; app mapping curated but incomplete | Yes — grow `data/app-mappings/` with reviewed entries |
+| **Direction** | Windows → Linux only (no Linux→Linux, macOS→Linux, or Windows→Windows exporters) | Yes — via shared bundle contract; each needs own inventory/path mapping |
+| **Browser logins** | No passwords/cookies/sessions (DPAPI-locked). Requires browser sync/password-manager re-login | **No — hard safety boundary. Do not relax.** |
+| **System state** | No registry/services/drivers auto-migration; GPU/Wi-Fi/printer guidance is manual/distro-dependent | Partly — better guidance/checklists, never silent privileged mutation |
+| **Distro automation** | Restore-only for immutable/atomic/transactional/declarative systems | Partly — more recipes/tests, never auto-mutate |
+| **Scale/robustness** | Large bundles slow; full payload hashing/resume not polished | Yes — resumable, verified chunked transfers |
+| **UX** | CLI/wizard only (no GUI/TUI app) | Yes — via `docs/ui-next.md`; must reuse bundle core |
+| **Ecosystem** | No published releases/packages, signatures, CodeRabbit enabled, or distro test matrix | Yes — releases + checksums/signing, CI matrix |
+| **Data coverage** | App mappings curated but incomplete; Brave/Edge primary | Yes — grow `data/app-mappings/` with reviewed entries |
 
-**Which to work on first (v1):** tests/CI → checksums/report already done → release + checksums/signing → distro test matrix.  
-**Do not relax:** secret exfiltration, silent cloud upload, auto-mutation of immutable systems, destructive mirroring.
+**Do not relax:** secret exfiltration, silent cloud upload, auto-mutation of immutable systems, destructive mirroring. Those limits are the product's trust foundation.
 
-## Code quality & review
+### Priority work (v1 → v1.1 → v2)
+1. **v1 (now):** tests ✅, checksums ✅, report ✅ → release + checksums/signing + CodeRabbit + distro matrix CI
+2. **v1.1:** resumable/verified large copies, hardware/driver checklist, app-mapping growth
+3. **v2:** Linux→Linux exporter, TUI/GUI wrapping same core, optional Rust copy/hash accelerator. macOS/Win→Win after that.
 
-- Please open issues/PRs for bugs and improvements.
-- This repo includes a `.coderabbit.yaml` config. To enable automated PR reviews, install the [CodeRabbit GitHub App](https://github.com/apps/coderabbitai) on your fork/repo (maintainers can enable it on the upstream repo).
-- Local checks you can run (optional, if installed):
-  - PowerShell: `Invoke-ScriptAnalyzer -Path .\scripts -Recurse` / `Invoke-Pester .\tests`
+---
+
+## Advanced tools
+
+| Tool | Purpose |
+|---|---|
+| `scripts/Verify-Win2LinBundle.ps1` | SHA-256 checksum write/verify (read-only verify, exit `0`=OK / `2`=BAD/MISSING) |
+| `scripts/New-Win2LinReport.ps1` | Migration report from `inventory.json` (safety + identity + accessibility) |
+| `scripts/New-Win2LinRecoveryKit.ps1` | Disaster recovery checklist |
+| `rust/win2lin-verify` | Optional cross-platform Rust accelerator (same checksum format) |
+
+---
+
+## Contributing
+
+- Open issues/PRs for bugs and improvements.
+- `.coderabbit.yaml` is included — install the [CodeRabbit GitHub App](https://github.com/apps/coderabbitai) on your fork for automated PR reviews.
+- Local checks:
+  - PowerShell: `Invoke-ScriptAnalyzer -Path .\scripts -Recurse` and `Invoke-Pester .\tests`
   - Bash: `shellcheck .\scripts\Win2Lin.sh`
+- Read `CONTRIBUTING.md` and `SECURITY.md` before contributing.
+
+## Security
+
+Win2Lin **never** copies, exports, or restores:
+- Browser passwords, cookies, session tokens, DPAPI-locked credential stores
+- Private SSH/GPG keys, API tokens, MFA secrets
+- `pagefile.sys`, `hiberfil.sys`, `swapfile.sys`
+
+Use **browser sync**, **password manager**, and **re-authentication** on Linux instead.
+
+Report vulnerabilities privately — see `SECURITY.md`.
 
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+
+---
+
+<p align="center">
+  <sub>Built for people who want to switch to Linux without losing their mind — or their data.</sub>
+</p>
